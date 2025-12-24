@@ -1,24 +1,57 @@
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Search, Plus, User } from "lucide-react"
-import { useNavigate } from "react-router-dom"
 import "./HomeScreen.css"
 
 export function HomeScreen() {
-  const navigate = useNavigate()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [category, setCategory] = useState("")
+  const [titleError, setTitleError] = useState(false)
 
   const handleNewProject = () => {
-    // Navigate to new project screen (to be implemented)
-    navigate('/new-project')
+    setIsDialogOpen(true)
+    // Reset form
+    setTitle("")
+    setDescription("")
+    setCategory("")
+    setTitleError(false)
+  }
+
+  const handleContinue = () => {
+    if (!title.trim()) {
+      setTitleError(true)
+      return
+    }
+    
+    // TODO: Handle project creation
+    console.log({ title, description, category })
+    setIsDialogOpen(false)
+  }
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value)
+    if (titleError && e.target.value.trim()) {
+      setTitleError(false)
+    }
   }
 
   return (
@@ -46,26 +79,12 @@ export function HomeScreen() {
             New Project <Plus size={18} className="ml-1" />
           </Button>
 
-          {/* User Avatar with Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="avatar-btn">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-orange-500 text-white">
-                    <User size={18} />
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Help</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* User Avatar */}
+          <Avatar className="h-9 w-9">
+            <AvatarFallback className="bg-orange-500 text-white">
+              <User size={18} />
+            </AvatarFallback>
+          </Avatar>
         </div>
       </header>
 
@@ -83,6 +102,76 @@ export function HomeScreen() {
           </Button>
         </div>
       </main>
+
+      {/* New Project Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="dialog-content">
+          <DialogHeader>
+            <DialogTitle className="dialog-title">Create new Project</DialogTitle>
+          </DialogHeader>
+          
+          <div className="dialog-form">
+            {/* Title Field */}
+            <div className="form-field">
+              <Label htmlFor="title" className="form-label">
+                Title
+              </Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={handleTitleChange}
+                className={`form-input ${titleError ? 'input-error' : ''}`}
+                placeholder=""
+              />
+              {titleError && (
+                <p className="error-message">Title is not empty</p>
+              )}
+            </div>
+
+            {/* Description Field */}
+            <div className="form-field">
+              <Label htmlFor="description" className="form-label">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="form-textarea"
+                rows={4}
+                placeholder=""
+              />
+            </div>
+
+            {/* Category Field */}
+            <div className="form-field">
+              <Label htmlFor="category" className="form-label">
+                Category
+              </Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="form-select">
+                  <SelectValue placeholder="" />
+                </SelectTrigger>
+                <SelectContent className="select-content">
+                  <SelectItem value="real-estate">Real Estate</SelectItem>
+                  <SelectItem value="tourism">Tourism</SelectItem>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="events">Events</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Continue Button */}
+            <Button 
+              onClick={handleContinue}
+              className="continue-btn"
+            >
+              Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,0 +1,110 @@
+.home-screen {
+  min-height: 100vh;
+  background-color: #2a2a2a;
+  background-image: 
+    radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Styles */
+.home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(42, 42, 42, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.app-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: #888;
+  pointer-events: none;
+}
+
+.search-input {
+  padding-left: 2.5rem;
+  width: 300px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.search-input::placeholder {
+  color: #888;
+}
+
+.new-project-btn-header {
+  background-color: #ff8c00;
+  color: #ffffff;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.new-project-btn-header:hover {
+  background-color: #ff9d1f;
+}
+
+.avatar-btn {
+  padding: 0;
+  height: auto;
+  border-radius: 50%;
+}
+
+/* Main Content Styles */
+.home-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.empty-message {
+  font-size: 1.125rem;
+  color: #b0b0b0;
+  margin: 0;
+}
+
+.new-project-btn-main {
+  background-color: #ff8c00;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 1rem;
+  padding: 1.5rem 2rem;
+  transition: background-color 0.2s;
+}
+
+.new-project-btn-main:hover {
+  background-color: #ff9d1f;
+}

@@ -3,6 +3,7 @@ import UpdateElectron from '@/components/update';
 import logoVite from './assets/logo-vite.svg';
 import logoElectron from './assets/logo-electron.svg';
 import './App.css';
+import { ShadcnDemo } from './components/ShadcnDemo';
 
 function App() {
    const [count, setCount] = useState(0);
@@ -28,6 +29,8 @@ function App() {
          </div>
 
          <UpdateElectron />
+
+     
       </div>
    );
 }

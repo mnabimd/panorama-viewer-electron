@@ -58,6 +58,9 @@ async function createWindow() {
     },
   })
 
+  // Maximize the window on load
+  win.maximize()
+
   if (VITE_DEV_SERVER_URL) { // #298
     win.loadURL(VITE_DEV_SERVER_URL)
     // Open devTool if the app is not packaged

@@ -91,4 +91,38 @@ export function setupProjectHandlers() {
       throw error
     }
   })
+
+  ipcMain.handle('get-projects', async () => {
+    try {
+      // Ensure projects directory exists
+      await fs.mkdir(PROJECTS_DIR, { recursive: true })
+
+      const entries = await fs.readdir(PROJECTS_DIR, { withFileTypes: true })
+      const projectDirs = entries.filter(entry => entry.isDirectory())
+
+      const projects = await Promise.all(
+        projectDirs.map(async (dir) => {
+          try {
+            const projectJsonPath = path.join(PROJECTS_DIR, dir.name, 'project.json')
+            const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+            const metadata = JSON.parse(projectJsonContent)
+            return {
+              ...metadata,
+              path: path.join(PROJECTS_DIR, dir.name),
+              // Add cover image path if it exists
+              cover: path.join(PROJECTS_DIR, dir.name, 'thumbnails', 'cover.jpg') // Simplified assumption, might need check
+            }
+          } catch (e) {
+            console.warn(`Failed to read project in ${dir.name}:`, e)
+            return null
+          }
+        })
+      )
+
+      return projects.filter(p => p !== null)
+    } catch (error) {
+      console.error('Failed to get projects:', error)
+      throw error
+    }
+  })
 }

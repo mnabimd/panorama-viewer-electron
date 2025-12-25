@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Dashboard } from "./Dashboard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -24,10 +25,28 @@ import "./HomeScreen.css"
 export function HomeScreen() {
   const { toast } = useToast()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [projects, setProjects] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState("")
   const [titleError, setTitleError] = useState(false)
+
+  const fetchProjects = async () => {
+    try {
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('get-projects')
+      setProjects(result)
+    } catch (error) {
+      console.error('Failed to fetch projects:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchProjects()
+  }, [])
 
   const handleNewProject = () => {
     setIsDialogOpen(true)
@@ -63,7 +82,8 @@ export function HomeScreen() {
         setTitle("")
         setDescription("")
         setCategory("")
-        // TODO: Navigate to project or refresh list
+        // Refresh list
+        fetchProjects()
       }
     } catch (error) {
       console.error('Failed to create project:', error)
@@ -76,6 +96,87 @@ export function HomeScreen() {
     if (titleError && e.target.value.trim()) {
       setTitleError(false)
     }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen bg-[#1a1a1a] text-white">Loading...</div>
+  }
+
+  if (projects.length > 0) {
+    return (
+      <>
+        <Dashboard projects={projects} onNewProject={handleNewProject} />
+        {/* New Project Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="dialog-content">
+            <DialogHeader>
+              <DialogTitle className="dialog-title">Create new Project</DialogTitle>
+            </DialogHeader>
+            
+            <div className="dialog-form">
+              {/* Title Field */}
+              <div className="form-field">
+                <Label htmlFor="title" className="form-label">
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={handleTitleChange}
+                  className={`form-input ${titleError ? 'input-error' : ''}`}
+                  placeholder=""
+                />
+                {titleError && (
+                  <p className="error-message">Title is not empty</p>
+                )}
+              </div>
+
+              {/* Description Field */}
+              <div className="form-field">
+                <Label htmlFor="description" className="form-label">
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="form-textarea"
+                  rows={4}
+                  placeholder=""
+                />
+              </div>
+
+              {/* Category Field */}
+              <div className="form-field">
+                <Label htmlFor="category" className="form-label">
+                  Category
+                </Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="form-select">
+                    <SelectValue placeholder="" />
+                  </SelectTrigger>
+                  <SelectContent className="select-content">
+                    <SelectItem value="real-estate">Real Estate</SelectItem>
+                    <SelectItem value="tourism">Tourism</SelectItem>
+                    <SelectItem value="education">Education</SelectItem>
+                    <SelectItem value="events">Events</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Continue Button */}
+              <Button 
+                onClick={handleContinue}
+                className="continue-btn"
+              >
+                Continue
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    )
   }
 
   return (

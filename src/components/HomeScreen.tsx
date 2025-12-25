@@ -18,9 +18,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Search, Plus, User } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import "./HomeScreen.css"
 
 export function HomeScreen() {
+  const { toast } = useToast()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -36,15 +38,37 @@ export function HomeScreen() {
     setTitleError(false)
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!title.trim()) {
       setTitleError(true)
       return
     }
     
-    // TODO: Handle project creation
-    console.log({ title, description, category })
-    setIsDialogOpen(false)
+    try {
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('create-project', {
+        name: title,
+        description,
+        category
+      })
+
+      if (result.success) {
+        console.log('Project created:', result)
+        setIsDialogOpen(false)
+        toast({
+          title: "Project created successfully",
+          description: `Project "${title}" has been created.`,
+        })
+        // Reset form
+        setTitle("")
+        setDescription("")
+        setCategory("")
+        // TODO: Navigate to project or refresh list
+      }
+    } catch (error) {
+      console.error('Failed to create project:', error)
+      // TODO: Show error toast
+    }
   }
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

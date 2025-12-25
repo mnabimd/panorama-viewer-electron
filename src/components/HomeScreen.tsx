@@ -105,7 +105,11 @@ export function HomeScreen() {
   if (projects.length > 0) {
     return (
       <>
-        <Dashboard projects={projects} onNewProject={handleNewProject} />
+        <Dashboard 
+          projects={projects} 
+          onNewProject={handleNewProject} 
+          onRefresh={fetchProjects}
+        />
         {/* New Project Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="dialog-content">

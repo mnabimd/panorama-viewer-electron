@@ -125,4 +125,14 @@ export function setupProjectHandlers() {
       throw error
     }
   })
+
+  ipcMain.handle('delete-project', async (_, projectPath: string) => {
+    try {
+      await fs.rm(projectPath, { recursive: true, force: true })
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to delete project:', error)
+      throw error
+    }
+  })
 }

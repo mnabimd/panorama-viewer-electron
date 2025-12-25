@@ -3,6 +3,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, Plus, User, Image as ImageIcon, Eye, Share2, Folder } from "lucide-react"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast"
 import "./Dashboard.css"
 
 interface Project {
@@ -12,15 +29,51 @@ interface Project {
   scenes: Record<string, any>
   updatedAt: string
   cover?: string
+  path: string
 }
 
 interface DashboardProps {
   projects: Project[]
   onNewProject: () => void
+  onRefresh: () => void
 }
 
-export function Dashboard({ projects, onNewProject }: DashboardProps) {
+export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps) {
+  const { toast } = useToast()
   const [filter, setFilter] = useState("all")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
+
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         project.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesSearch
+  })
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return
+
+    try {
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('delete-project', projectToDelete.path)
+      if (result.success) {
+        toast({
+          title: "Project deleted",
+          description: `Project "${projectToDelete.name}" has been deleted.`,
+        })
+        onRefresh()
+      }
+    } catch (error) {
+      console.error('Failed to delete project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete project.",
+        variant: "destructive",
+      })
+    } finally {
+      setProjectToDelete(null)
+    }
+  }
 
   return (
     <div className="dashboard">
@@ -35,6 +88,8 @@ export function Dashboard({ projects, onNewProject }: DashboardProps) {
               type="text" 
               placeholder="Search" 
               className="search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
@@ -69,30 +124,44 @@ export function Dashboard({ projects, onNewProject }: DashboardProps) {
           </div>
 
           <div className="projects-grid">
-            {projects.map((project) => (
-              <div key={project.id} className="project-card">
-                <div className="card-thumbnail">
-                  {project.cover ? (
-                    <img src={`file://${project.cover}`} alt={project.name} />
-                  ) : (
-                    <div className="thumbnail-placeholder">
-                      <ImageIcon size={32} />
-                      <span>No Preview</span>
+            {filteredProjects.map((project) => (
+              <ContextMenu key={project.id}>
+                <ContextMenuTrigger>
+                  <div className="project-card">
+                    <div className="card-thumbnail">
+                      {project.cover ? (
+                        <img src={`file://${project.cover}`} alt={project.name} />
+                      ) : (
+                        <div className="thumbnail-placeholder">
+                          <ImageIcon size={32} />
+                          <span>No Preview</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="card-content">
-                  <div className="card-tags">
-                    <span className="tag">
-                      <ImageIcon size={12} />
-                      {Object.keys(project.scenes || {}).length}
-                    </span>
-                    <span className="tag">Draft</span>
+                    <div className="card-content">
+                      <div className="card-tags">
+                        <span className="tag">
+                          <ImageIcon size={12} />
+                          {Object.keys(project.scenes || {}).length}
+                        </span>
+                        <span className="tag">Draft</span>
+                      </div>
+                      <h3 className="project-title">{project.name}</h3>
+                      <p className="project-desc">{project.description || "No description"}</p>
+                    </div>
                   </div>
-                  <h3 className="project-title">{project.name}</h3>
-                  <p className="project-desc">{project.description || "No description"}</p>
-                </div>
-              </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem>Open</ContextMenuItem>
+                  <ContextMenuItem>View Info</ContextMenuItem>
+                  <ContextMenuItem 
+                    className="text-red-600 focus:text-red-600 focus:bg-red-100"
+                    onClick={() => setProjectToDelete(project)}
+                  >
+                    Delete
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             ))}
           </div>
         </div>
@@ -140,6 +209,27 @@ export function Dashboard({ projects, onNewProject }: DashboardProps) {
           </div>
         </div>
       </main>
+
+      <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the project
+              "{projectToDelete?.name}" and remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteProject}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

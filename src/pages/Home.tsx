@@ -20,16 +20,16 @@ import {
 } from "@/components/ui/select"
 import { Search, Plus, User } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import "./HomeScreen.css"
+import "./Home.css"
 
-export function HomeScreen() {
+export function Home() {
   const { toast } = useToast()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [category, setCategory] = useState("")
+  const [category, setCategory] = useState("real-estate")
   const [titleError, setTitleError] = useState(false)
 
   const fetchProjects = async () => {
@@ -53,7 +53,7 @@ export function HomeScreen() {
     // Reset form
     setTitle("")
     setDescription("")
-    setCategory("")
+    setCategory("real-estate")
     setTitleError(false)
   }
 
@@ -81,7 +81,7 @@ export function HomeScreen() {
         // Reset form
         setTitle("")
         setDescription("")
-        setCategory("")
+        setCategory("real-estate")
         // Refresh list
         fetchProjects()
       }

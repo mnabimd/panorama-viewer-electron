@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { HashRouter, Routes, Route } from 'react-router-dom'
-import { HomeScreen } from './components/HomeScreen'
+import { Home } from './pages/Home'
 import { Toaster } from '@/components/ui/toaster'
 
 import './index.css'
@@ -14,7 +14,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <HashRouter>
       <Routes>
-        <Route path="/" element={<HomeScreen />} />
+        <Route path="/" element={<Home />} />
       </Routes>
       <Toaster />
     </HashRouter>

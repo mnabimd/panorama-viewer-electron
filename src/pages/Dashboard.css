@@ -60,7 +60,7 @@
 .dashboard-main {
   flex: 1;
   padding: 2rem;
-  overflow-y: auto;
+  overflow: hidden; /* Changed from overflow-y: auto */
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -68,6 +68,9 @@
 
 .projects-section {
   flex: 1;
+  overflow-y: auto; /* Added to allow scrolling within projects section */
+  min-height: 0; /* Important for flex child scrolling */
+  padding-right: 0.5rem; /* Add some padding for scrollbar */
 }
 
 .filter-bar {
@@ -186,7 +189,9 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
-  margin-top: auto;
+  margin-top: 0;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
 }
 
 .stat-card {

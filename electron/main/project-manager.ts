@@ -135,4 +135,54 @@ export function setupProjectHandlers() {
       throw error
     }
   })
+
+  ipcMain.handle('get-project-by-id', async (_, projectId: string) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      try {
+        const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+        const metadata = JSON.parse(projectJsonContent)
+        return {
+          ...metadata,
+          path: projectPath,
+          cover: path.join(projectPath, 'thumbnails', 'cover.jpg')
+        }
+      } catch (e) {
+        console.warn(`Failed to read project ${projectId}:`, e)
+        return null
+      }
+    } catch (error) {
+      console.error('Failed to get project:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('rename-project', async (_, { projectId, newName }: { projectId: string, newName: string }) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata = JSON.parse(projectJsonContent)
+      
+      const updatedMetadata = {
+        ...metadata,
+        name: newName,
+        updatedAt: new Date().toISOString()
+      }
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(updatedMetadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, project: updatedMetadata }
+    } catch (error) {
+      console.error('Failed to rename project:', error)
+      throw error
+    }
+  })
 }

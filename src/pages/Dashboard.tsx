@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -42,6 +43,7 @@ interface DashboardProps {
 
 export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps) {
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [filter, setFilter] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
@@ -142,7 +144,10 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
             {filteredProjects.map((project) => (
               <ContextMenu key={project.id}>
                 <ContextMenuTrigger>
-                  <div className="project-card">
+                  <div 
+                    className="project-card cursor-pointer"
+                    onClick={() => navigate(`/project/${project.id}`)}
+                  >
                     <div className="card-thumbnail">
                       {project.cover ? (
                         <img src={`file://${project.cover}`} alt={project.name} />

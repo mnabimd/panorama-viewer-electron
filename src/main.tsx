@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { Home } from './pages/Home'
+import { ProjectEditor } from './pages/ProjectEditor'
 import { Toaster } from '@/components/ui/toaster'
 
 import './index.css'
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <HashRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/project/:id" element={<ProjectEditor />} />
       </Routes>
       <Toaster />
     </HashRouter>

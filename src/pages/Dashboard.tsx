@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
+import { PROJECT_CATEGORIES } from "@/constants"
 import "./Dashboard.css"
 
 interface Project {
@@ -30,6 +31,7 @@ interface Project {
   updatedAt: string
   cover?: string
   path: string
+  category?: string
 }
 
 interface DashboardProps {
@@ -47,7 +49,11 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          project.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesSearch
+    
+    // @ts-ignore - project might have category from creation
+    const matchesFilter = filter === 'all' || project.category === filter
+    
+    return matchesSearch && matchesFilter
   })
 
   const handleDeleteProject = async () => {
@@ -118,6 +124,15 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
             >
               All
             </button>
+            {PROJECT_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                className={`filter-btn ${filter === cat.id ? 'active' : ''}`}
+                onClick={() => setFilter(cat.id)}
+              >
+                {cat.label}
+              </button>
+            ))}
             <button className="add-btn" onClick={onNewProject}>
               <Plus size={16} />
             </button>

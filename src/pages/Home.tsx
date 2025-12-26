@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select"
 import { Search, Plus, User } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { PROJECT_CATEGORIES } from "@/constants"
 import "./Home.css"
 
 export function Home() {
@@ -160,11 +161,11 @@ export function Home() {
                     <SelectValue placeholder="" />
                   </SelectTrigger>
                   <SelectContent className="select-content">
-                    <SelectItem value="real-estate">Real Estate</SelectItem>
-                    <SelectItem value="tourism">Tourism</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
-                    <SelectItem value="events">Events</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    {PROJECT_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -282,11 +283,11 @@ export function Home() {
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent className="select-content">
-                  <SelectItem value="real-estate">Real Estate</SelectItem>
-                  <SelectItem value="tourism">Tourism</SelectItem>
-                  <SelectItem value="education">Education</SelectItem>
-                  <SelectItem value="events">Events</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  {PROJECT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

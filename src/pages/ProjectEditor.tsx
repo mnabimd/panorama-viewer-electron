@@ -9,7 +9,9 @@ import {
   Pencil, 
   Image as ImageIcon,
   ChevronRight,
-  ChevronLeft as ChevronLeftIcon
+  ChevronLeft as ChevronLeftIcon,
+  Eye,
+  EyeOff
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,8 +20,8 @@ import "./ProjectEditor.css"
 
 // Dummy data for initial render, will be replaced/merged with real data logic later
 const DUMMY_SCENES = [
-  { id: '1', name: 'kitchen', image: '/_dummy_reusable_data/_dummy2.jpg' },
-  { id: '2', name: 'bathroom', image: '/_dummy_reusable_data/_dummy2.jpg' },
+  { id: '1', name: 'kitchen', image: '/_dummy_reusable_data/_dummy2.jpg', isVisible: true },
+  { id: '2', name: 'bathroom', image: '/_dummy_reusable_data/_dummy2.jpg', isVisible: true },
 ]
 
 const DUMMY_HOTSPOTS = [
@@ -37,9 +39,9 @@ export function ProjectEditor() {
   const [projectName, setProjectName] = useState("")
   const [isEditingName, setIsEditingName] = useState(false)
   
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
   
+  const [scenes, setScenes] = useState(DUMMY_SCENES)
   const [activeScene, setActiveScene] = useState('1')
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -106,10 +108,16 @@ export function ProjectEditor() {
     }
   }
 
-  const toggleLeftSidebar = () => setLeftSidebarOpen(!leftSidebarOpen)
   const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen)
 
-  const filteredScenes = DUMMY_SCENES.filter(scene => 
+  const toggleSceneVisibility = (e: React.MouseEvent, sceneId: string) => {
+    e.stopPropagation()
+    setScenes(prev => prev.map(s => 
+      s.id === sceneId ? { ...s, isVisible: !s.isVisible } : s
+    ))
+  }
+
+  const filteredScenes = scenes.filter(scene => 
     scene.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -120,7 +128,7 @@ export function ProjectEditor() {
   return (
     <div className="project-editor">
       {/* Custom Left Sidebar */}
-      <aside className={`editor-sidebar-left ${leftSidebarOpen ? '' : 'collapsed'}`}>
+      <aside className="editor-sidebar-left">
         <div className="sidebar-header-content">
           <Button 
             variant="ghost" 
@@ -187,10 +195,24 @@ export function ProjectEditor() {
                 className={`scene-item ${activeScene === scene.id ? 'active' : ''}`}
                 onClick={() => setActiveScene(scene.id)}
               >
-                <img src={scene.image} alt={scene.name} className="scene-thumbnail" />
+                <img 
+                  src={scene.image} 
+                  alt={scene.name} 
+                  className="scene-thumbnail" 
+                  style={{ opacity: scene.isVisible ? 1 : 0.4 }}
+                />
                 <div className="scene-name">{scene.name}</div>
+                
+                <button 
+                  className={`visibility-toggle ${!scene.isVisible ? 'is-hidden' : ''}`}
+                  onClick={(e) => toggleSceneVisibility(e, scene.id)}
+                  title={scene.isVisible ? "Hide scene" : "Show scene"}
+                >
+                  {scene.isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                </button>
+
                 {activeScene === scene.id && (
-                  <div className="absolute top-1 right-1 text-white">
+                  <div className="absolute top-1 left-1 text-white">
                     <ImageIcon size={14} />
                   </div>
                 )}
@@ -202,32 +224,6 @@ export function ProjectEditor() {
 
       {/* Main Content */}
       <main className="editor-main">
-        {/* Left Sidebar Toggle (when collapsed) */}
-        {!leftSidebarOpen && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 left-4 z-10 bg-[#252525] text-white hover:bg-[#333]"
-            onClick={toggleLeftSidebar}
-          >
-            <ChevronRight />
-          </Button>
-        )}
-
-        {/* Left Sidebar Toggle (when open) - Optional, usually handled by a button inside sidebar or just rely on layout */}
-        {leftSidebarOpen && (
-           <Button
-           variant="ghost"
-           size="icon"
-           className="absolute top-4 left-[260px] z-10 bg-[#252525] text-white hover:bg-[#333] transition-all duration-300"
-           style={{ left: leftSidebarOpen ? '260px' : '10px' }} // Adjust based on sidebar width
-           onClick={toggleLeftSidebar}
-         >
-           <ChevronLeftIcon />
-         </Button>
-        )}
-
-
         {/* Right Sidebar Toggle (when collapsed) */}
         {!rightSidebarOpen && (
           <Button

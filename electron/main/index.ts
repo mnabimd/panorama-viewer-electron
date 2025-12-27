@@ -56,6 +56,9 @@ async function createWindow() {
       // Consider using contextBridge.exposeInMainWorld
       // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
       // contextIsolation: false,
+      
+      // Disable web security in development to allow loading local files
+      webSecurity: !VITE_DEV_SERVER_URL,
     },
   })
 

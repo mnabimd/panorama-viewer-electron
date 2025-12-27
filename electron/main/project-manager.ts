@@ -13,6 +13,50 @@ interface CreateProjectParams {
   coverImagePath?: string
 }
 
+// Hotspot types
+type HotspotType = 'scene' | 'info' | 'url'
+
+interface BaseHotspot {
+  id: string
+  type: HotspotType
+  position: {
+    yaw: number    // Horizontal rotation in degrees
+    pitch: number  // Vertical rotation in degrees
+  }
+  tooltip?: string
+}
+
+interface SceneHotspot extends BaseHotspot {
+  type: 'scene'
+  targetSceneId: string
+  transition?: 'fade' | 'slide' | 'none'
+}
+
+interface InfoHotspot extends BaseHotspot {
+  type: 'info'
+  title: string
+  content: string
+  imageUrl?: string
+}
+
+interface UrlHotspot extends BaseHotspot {
+  type: 'url'
+  url: string
+  openInNewTab?: boolean
+}
+
+type Hotspot = SceneHotspot | InfoHotspot | UrlHotspot
+
+// Scene interface
+interface Scene {
+  id: string
+  name: string
+  imagePath: string
+  hotspots: Hotspot[]
+  thumbnail?: string
+  description?: string
+}
+
 interface ProjectMetadata {
   id: string
   name: string
@@ -21,8 +65,8 @@ interface ProjectMetadata {
   version: string
   createdAt: string
   updatedAt: string
-  mainScene?: string
-  scenes: Record<string, any>
+  mainSceneId?: string
+  scenes: Scene[]
   settings: {
     autoRotate: boolean
     initialFov: number
@@ -60,7 +104,7 @@ export function setupProjectHandlers() {
         version: '1.0',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        scenes: {},
+        scenes: [],
         settings: {
           autoRotate: false,
           initialFov: 75

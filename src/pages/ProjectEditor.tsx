@@ -7,137 +7,75 @@ import {
   Play, 
   Trash2, 
   Pencil, 
-  Image as ImageIcon,
   ChevronRight,
-  ChevronLeft as ChevronLeftIcon,
   Eye,
-  EyeOff,
-  Link2,
-  Info,
-  MapPin
+  EyeOff
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { HotspotDialog } from "@/components/HotspotDialog"
 import { AddSceneDialog } from "@/components/AddSceneDialog"
+import { useProject } from "@/hooks/useProject"
+import { useHotspots } from "@/hooks/useHotspots"
+import { useScenes } from "@/hooks/useScenes"
+import { getHotspotIcon, getHotspotLabel } from "@/utils/hotspot.utils"
+import { Hotspot } from "@/types/project.types"
 import "./ProjectEditor.css"
-
-// Hotspot types
-type HotspotType = 'scene' | 'info' | 'url'
-
-interface BaseHotspot {
-  id: string
-  type: HotspotType
-  position: {
-    yaw: number
-    pitch: number
-  }
-  tooltip?: string
-}
-
-interface SceneHotspot extends BaseHotspot {
-  type: 'scene'
-  targetSceneId: string
-  transition?: 'fade' | 'slide' | 'none'
-}
-
-interface InfoHotspot extends BaseHotspot {
-  type: 'info'
-  title: string
-  content: string
-  imageUrl?: string
-}
-
-interface UrlHotspot extends BaseHotspot {
-  type: 'url'
-  url: string
-  openInNewTab?: boolean
-}
-
-type Hotspot = SceneHotspot | InfoHotspot | UrlHotspot
-
-interface Scene {
-  id: string
-  name: string
-  imagePath: string
-  hotspots: Hotspot[]
-  thumbnail?: string
-  description?: string
-  isVisible?: boolean
-}
 
 export function ProjectEditor() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { toast } = useToast()
   
-  const [project, setProject] = useState<any>(null)
-  const [projectName, setProjectName] = useState("")
-  const [isEditingName, setIsEditingName] = useState(false)
-  
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
-  
-  const [scenes, setScenes] = useState<Scene[]>([])
-  const [activeScene, setActiveScene] = useState<string>('')
-  const [searchQuery, setSearchQuery] = useState("")
-  
-  // Hotspot management state
-  const [hotspots, setHotspots] = useState<Hotspot[]>([])
-  const [isHotspotDialogOpen, setIsHotspotDialogOpen] = useState(false)
-  const [editingHotspot, setEditingHotspot] = useState<Hotspot | null>(null)
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false)
-  const [hotspotToDelete, setHotspotToDelete] = useState<string | null>(null)
-  
-  // Add scene dialog state
-  const [isAddSceneDialogOpen, setIsAddSceneDialogOpen] = useState(false)
+  // Custom hooks
+  const {
+    project,
+    projectName,
+    setProjectName,
+    isEditingName,
+    setIsEditingName,
+    scenes,
+    setScenes,
+    isLoading,
+    refreshProject,
+    renameProject
+  } = useProject(id)
 
-  useEffect(() => {
-    const fetchProject = async () => {
-      if (!id) return
-      try {
-        // @ts-ignore
-        const result = await window.ipcRenderer.invoke('get-project-by-id', id)
-        if (result) {
-          setProject(result)
-          setProjectName(result.name)
-          
-          // Load scenes from project
-          let scenesList: Scene[] = []
-          if (Array.isArray(result.scenes)) {
-            scenesList = result.scenes
-          } else if (result.scenes && typeof result.scenes === 'object') {
-            scenesList = Object.values(result.scenes)
-          }
-          
-          setScenes(scenesList)
-          
-          // Set first scene as active if available
-          if (scenesList.length > 0 && !activeScene) {
-            setActiveScene(scenesList[0].id)
-            loadHotspotsForScene(result, scenesList[0].id)
-          }
-        } else {
-          toast({
-            title: "Error",
-            description: "Project not found",
-            variant: "destructive",
-          })
-          navigate('/')
-        }
-      } catch (error) {
-        console.error('Failed to fetch project:', error)
-        toast({
-          title: "Error",
-          description: "Failed to load project",
-          variant: "destructive",
-        })
-      }
-    }
-    fetchProject()
-  }, [id, navigate, toast])
+  const {
+    activeScene,
+    setActiveScene,
+    searchQuery,
+    setSearchQuery,
+    filteredScenes,
+    isAddSceneDialogOpen,
+    setIsAddSceneDialogOpen,
+    toggleSceneVisibility,
+    handleNewImage,
+    handleSceneAdded
+  } = useScenes(scenes, setScenes)
+
+  const {
+    hotspots,
+    setHotspots,
+    isHotspotDialogOpen,
+    setIsHotspotDialogOpen,
+    editingHotspot,
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+    deleteAllConfirmOpen,
+    setDeleteAllConfirmOpen,
+    hotspotToDelete,
+    setHotspotToDelete,
+    loadHotspotsForScene,
+    handleAddHotspot,
+    handleEditHotspot,
+    handleSubmitHotspot,
+    handleDeleteHotspot,
+    handleDeleteAllHotspots
+  } = useHotspots(project?.id, activeScene)
+
+  // UI state
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
 
   // Load hotspots when active scene changes
   useEffect(() => {
@@ -146,238 +84,17 @@ export function ProjectEditor() {
     }
   }, [activeScene, project])
 
-  const loadHotspotsForScene = (projectData: any, sceneId: string) => {
-    let scenesList: any[] = []
-    
-    // Handle both array and object formats for scenes
-    if (Array.isArray(projectData.scenes)) {
-      scenesList = projectData.scenes
-    } else if (projectData.scenes && typeof projectData.scenes === 'object') {
-      scenesList = Object.values(projectData.scenes)
+  // Set first scene as active when scenes load
+  useEffect(() => {
+    if (scenes.length > 0 && !activeScene && project) {
+      setActiveScene(scenes[0].id)
+      loadHotspotsForScene(project, scenes[0].id)
     }
-
-    const scene = scenesList.find((s: any) => s.id === sceneId)
-    if (scene && scene.hotspots) {
-      setHotspots(scene.hotspots)
-    } else {
-      setHotspots([])
-    }
-  }
-
-  const refreshProject = async () => {
-    if (!id) return
-    try {
-      // @ts-ignore
-      const result = await window.ipcRenderer.invoke('get-project-by-id', id)
-      if (result) {
-        setProject(result)
-        
-        // Reload scenes
-        let scenesList: Scene[] = []
-        if (Array.isArray(result.scenes)) {
-          scenesList = result.scenes
-        } else if (result.scenes && typeof result.scenes === 'object') {
-          scenesList = Object.values(result.scenes)
-        }
-        setScenes(scenesList)
-        
-        loadHotspotsForScene(result, activeScene)
-      }
-    } catch (error) {
-      console.error('Failed to refresh project:', error)
-    }
-  }
-
-  const handleRename = async () => {
-    if (!project || !projectName.trim() || projectName === project.name) {
-      setIsEditingName(false)
-      setProjectName(project?.name || "")
-      return
-    }
-
-    try {
-      // @ts-ignore
-      const result = await window.ipcRenderer.invoke('rename-project', {
-        projectId: project.id,
-        newName: projectName
-      })
-      
-      if (result.success) {
-        setProject(result.project)
-        toast({
-          title: "Success",
-          description: "Project renamed successfully",
-          variant: "success",
-        })
-      }
-    } catch (error) {
-      console.error('Failed to rename project:', error)
-      toast({
-        title: "Error",
-        description: "Failed to rename project",
-        variant: "destructive",
-      })
-      setProjectName(project.name)
-    } finally {
-      setIsEditingName(false)
-    }
-  }
+  }, [scenes, activeScene, project])
 
   const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen)
 
-  const toggleSceneVisibility = (e: React.MouseEvent, sceneId: string) => {
-    e.stopPropagation()
-    setScenes(prev => prev.map(s => 
-      s.id === sceneId ? { ...s, isVisible: !s.isVisible } : s
-    ))
-  }
-
-  const filteredScenes = scenes.filter(scene => 
-    scene.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  // Hotspot management handlers
-  const handleAddHotspot = () => {
-    setEditingHotspot(null)
-    setIsHotspotDialogOpen(true)
-  }
-
-  const handleEditHotspot = (hotspot: Hotspot) => {
-    setEditingHotspot(hotspot)
-    setIsHotspotDialogOpen(true)
-  }
-
-  const handleSubmitHotspot = async (hotspotData: Omit<Hotspot, 'id'>) => {
-    try {
-      if (editingHotspot) {
-        // Update existing hotspot
-        // @ts-ignore
-        await window.ipcRenderer.invoke('update-hotspot', {
-          projectId: project.id,
-          sceneId: activeScene,
-          hotspotId: editingHotspot.id,
-          hotspotData
-        })
-        toast({
-          title: "Success",
-          description: "Hotspot updated successfully",
-          variant: "success",
-        })
-      } else {
-        // Add new hotspot
-        // @ts-ignore
-        await window.ipcRenderer.invoke('add-hotspot', {
-          projectId: project.id,
-          sceneId: activeScene,
-          hotspotData
-        })
-        toast({
-          title: "Success",
-          description: "Hotspot added successfully",
-          variant: "success",
-        })
-      }
-      await refreshProject()
-      setIsHotspotDialogOpen(false)
-    } catch (error) {
-      console.error('Failed to submit hotspot:', error)
-      toast({
-        title: "Error",
-        description: "Failed to save hotspot",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleDeleteHotspot = async () => {
-    if (!hotspotToDelete) return
-    
-    try {
-      // @ts-ignore
-      await window.ipcRenderer.invoke('delete-hotspot', {
-        projectId: project.id,
-        sceneId: activeScene,
-        hotspotId: hotspotToDelete
-      })
-      toast({
-        title: "Success",
-        description: "Hotspot deleted successfully",
-        variant: "success",
-      })
-      await refreshProject()
-    } catch (error) {
-      console.error('Failed to delete hotspot:', error)
-      toast({
-        title: "Error",
-        description: "Failed to delete hotspot",
-        variant: "destructive",
-      })
-    } finally {
-      setDeleteConfirmOpen(false)
-      setHotspotToDelete(null)
-    }
-  }
-
-  const handleDeleteAllHotspots = async () => {
-    try {
-      // @ts-ignore
-      await window.ipcRenderer.invoke('delete-all-hotspots', {
-        projectId: project.id,
-        sceneId: activeScene
-      })
-      toast({
-        title: "Success",
-        description: "All hotspots deleted successfully",
-        variant: "success",
-      })
-      await refreshProject()
-    } catch (error) {
-      console.error('Failed to delete all hotspots:', error)
-      toast({
-        title: "Error",
-        description: "Failed to delete all hotspots",
-        variant: "destructive",
-      })
-    } finally {
-      setDeleteAllConfirmOpen(false)
-    }
-  }
-
-  const getHotspotIcon = (type: HotspotType) => {
-    switch (type) {
-      case 'scene': return <MapPin size={18} className="text-blue-400" />
-      case 'info': return <Info size={18} className="text-green-400" />
-      case 'url': return <Link2 size={18} className="text-purple-400" />
-    }
-  }
-
-  const getHotspotLabel = (hotspot: Hotspot) => {
-    if (hotspot.type === 'scene') {
-      const targetScene = scenes.find(s => s.id === hotspot.targetSceneId)
-      return targetScene?.name || 'Unknown Scene'
-    } else if (hotspot.type === 'info') {
-      return hotspot.title
-    } else if (hotspot.type === 'url') {
-      return hotspot.url.length > 30 ? hotspot.url.substring(0, 30) + '...' : hotspot.url
-    }
-    return 'Hotspot'
-  }
-
-  const handleNewImage = () => {
-    setIsAddSceneDialogOpen(true)
-  }
-
-  const handleSceneAdded = async () => {
-    await refreshProject()
-    setIsAddSceneDialogOpen(false)
-    toast({
-      title: "Success",
-      description: "Scene added successfully",
-      variant: "success",
-    })
-  }
-
-  if (!project) {
+  if (isLoading || !project) {
     return <div className="flex items-center justify-center h-screen bg-[#1a1a1a] text-white">Loading...</div>
   }
 
@@ -400,8 +117,8 @@ export function ProjectEditor() {
               <Input
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                onBlur={handleRename}
-                onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                onBlur={renameProject}
+                onKeyDown={(e) => e.key === 'Enter' && renameProject()}
                 autoFocus
                 className="edit-name-input"
               />
@@ -458,63 +175,35 @@ export function ProjectEditor() {
                   style={{ opacity: scene.isVisible !== false ? 1 : 0.4 }}
                 />
                 <div className="scene-name">{scene.name}</div>
-                
                 <button 
                   className={`visibility-toggle ${scene.isVisible === false ? 'is-hidden' : ''}`}
                   onClick={(e) => toggleSceneVisibility(e, scene.id)}
-                  title={scene.isVisible !== false ? "Hide scene" : "Show scene"}
                 >
-                  {scene.isVisible !== false ? <Eye size={14} /> : <EyeOff size={14} />}
+                  {scene.isVisible !== false ? <Eye size={16} /> : <EyeOff size={16} />}
                 </button>
-
-                {activeScene === scene.id && (
-                  <div className="absolute top-1 left-1 text-white">
-                    <ImageIcon size={14} />
-                  </div>
-                )}
               </div>
             ))}
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Center Content */}
       <main className="editor-main">
-        {/* Right Sidebar Toggle (when collapsed) */}
-        {!rightSidebarOpen && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 right-4 z-10 bg-[#252525] text-white hover:bg-[#333]"
-            onClick={toggleRightSidebar}
-          >
-            <ChevronLeftIcon />
-          </Button>
-        )}
-        
-        <div className="text-gray-500">
-          {/* 360 Viewer Placeholder */}
-          Select a scene to view
-        </div>
+        <div className="text-gray-500">360° Viewer Placeholder</div>
       </main>
 
-      {/* Right Sidebar (Custom) */}
-      <aside className={`editor-sidebar-right ${rightSidebarOpen ? '' : 'collapsed'}`}>
+      {/* Right Sidebar */}
+      <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
         <div className="right-sidebar-header">
-           <Button 
+          <Button 
             variant="ghost" 
-            size="icon" 
+            size="icon"
             onClick={toggleRightSidebar}
-            className="text-gray-400 hover:text-white mr-auto"
           >
-            <ChevronRight />
+            {rightSidebarOpen ? <ChevronRight /> : <ChevronLeft />}
           </Button>
-
-          <Button variant="ghost" size="icon" className="text-orange-500">
-            <Play />
-          </Button>
-          <Button className="publish-btn">
-            Publish
+          <Button className="publish-btn" size="sm">
+            <Play size={14} className="mr-1" /> Publish
           </Button>
         </div>
 
@@ -547,7 +236,7 @@ export function ProjectEditor() {
               <div key={hotspot.id} className="hotspot-item">
                 <div className="hotspot-info">
                   {getHotspotIcon(hotspot.type)}
-                  <span className="text-base font-normal">{getHotspotLabel(hotspot)}</span>
+                  <span className="text-base font-normal">{getHotspotLabel(hotspot, scenes)}</span>
                 </div>
                 <div className="hotspot-actions">
                   <button 
@@ -579,7 +268,7 @@ export function ProjectEditor() {
         mode={editingHotspot ? 'edit' : 'add'}
         existingHotspot={editingHotspot || undefined}
         availableScenes={scenes}
-        onSubmit={handleSubmitHotspot}
+        onSubmit={(data) => handleSubmitHotspot(data, refreshProject)}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -596,7 +285,7 @@ export function ProjectEditor() {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleDeleteHotspot}
+              onClick={() => handleDeleteHotspot(refreshProject)}
               className="bg-red-500 hover:bg-red-600"
             >
               Delete
@@ -619,7 +308,7 @@ export function ProjectEditor() {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleDeleteAllHotspots}
+              onClick={() => handleDeleteAllHotspots(refreshProject)}
               className="bg-red-500 hover:bg-red-600"
             >
               Delete All
@@ -634,7 +323,7 @@ export function ProjectEditor() {
         onOpenChange={setIsAddSceneDialogOpen}
         projectId={project.id}
         existingScenes={scenes}
-        onSceneAdded={handleSceneAdded}
+        onSceneAdded={() => handleSceneAdded(refreshProject)}
       />
     </div>
   )

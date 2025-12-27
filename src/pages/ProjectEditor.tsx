@@ -207,6 +207,7 @@ export function ProjectEditor() {
         toast({
           title: "Success",
           description: "Project renamed successfully",
+          variant: "success",
         })
       }
     } catch (error) {
@@ -260,6 +261,7 @@ export function ProjectEditor() {
         toast({
           title: "Success",
           description: "Hotspot updated successfully",
+          variant: "success",
         })
       } else {
         // Add new hotspot
@@ -272,6 +274,7 @@ export function ProjectEditor() {
         toast({
           title: "Success",
           description: "Hotspot added successfully",
+          variant: "success",
         })
       }
       await refreshProject()
@@ -299,6 +302,7 @@ export function ProjectEditor() {
       toast({
         title: "Success",
         description: "Hotspot deleted successfully",
+        variant: "success",
       })
       await refreshProject()
     } catch (error) {
@@ -324,6 +328,7 @@ export function ProjectEditor() {
       toast({
         title: "Success",
         description: "All hotspots deleted successfully",
+        variant: "success",
       })
       await refreshProject()
     } catch (error) {
@@ -368,6 +373,7 @@ export function ProjectEditor() {
     toast({
       title: "Success",
       description: "Scene added successfully",
+      variant: "success",
     })
   }
 

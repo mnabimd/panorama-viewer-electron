@@ -78,6 +78,7 @@ export function Home() {
         toast({
           title: "Project created successfully",
           description: `Project "${title}" has been created.`,
+          variant: "success",
         })
         // Reset form
         setTitle("")

@@ -16,7 +16,10 @@ export function SceneCard({ id, name, imagePath, selected, onClick, className }:
       className={cn(
         "relative aspect-video rounded-lg overflow-hidden cursor-pointer transition-all",
         "hover:scale-102 hover:shadow-lg",
-        selected ? "ring-3 ring-orange-500" : "ring-1 ring-gray-700",
+        "ring-2",
+        selected 
+          ? "ring-orange-500" 
+          : "ring-gray-700 hover:ring-orange-400",
         className
       )}
     >

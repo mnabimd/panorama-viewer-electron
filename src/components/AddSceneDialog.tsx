@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,6 +37,27 @@ export function AddSceneDialog({
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Set default scene name when dialog opens
+  const getDefaultSceneName = () => {
+    const sceneCount = existingScenes.length
+    return `Scene ${sceneCount + 1}`
+  }
+
+  // Update scene name when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSceneName(getDefaultSceneName())
+    }
+  }, [open, existingScenes.length])
+
+  // Reset form when dialog opens/closes
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      handleClose()
+    }
+    onOpenChange(isOpen)
+  }
 
   const handleUploadClick = async () => {
     try {
@@ -87,7 +108,7 @@ export function AddSceneDialog({
       })
 
       // Reset form
-      setSceneName("")
+      setSceneName(getDefaultSceneName())
       setSelectedImagePath(null)
       setSelectedSceneId(null)
       
@@ -108,7 +129,7 @@ export function AddSceneDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[600px] bg-[#1a1a1a] text-white border-gray-700 max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Scene</DialogTitle>

@@ -444,6 +444,23 @@ export function setupProjectHandlers() {
       metadata.scenes.push(newScene)
       metadata.updatedAt = new Date().toISOString()
       
+      // If this is the first scene, set it as the cover photo
+      if (metadata.scenes.length === 1) {
+        const thumbnailsDir = path.join(projectPath, 'thumbnails')
+        
+        // Ensure thumbnails directory exists
+        try {
+          await fs.access(thumbnailsDir)
+        } catch {
+          await fs.mkdir(thumbnailsDir, { recursive: true })
+        }
+        
+        // Copy the image as cover.jpg
+        const coverPath = path.join(thumbnailsDir, 'cover.jpg')
+        const sourceImagePath = isNewUpload ? finalImagePath : imagePath
+        await fs.copyFile(sourceImagePath, coverPath)
+      }
+      
       await fs.writeFile(
         projectJsonPath,
         JSON.stringify(metadata, null, 2),

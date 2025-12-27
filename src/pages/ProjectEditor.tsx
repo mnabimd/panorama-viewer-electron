@@ -345,9 +345,9 @@ export function ProjectEditor() {
 
   const getHotspotIcon = (type: HotspotType) => {
     switch (type) {
-      case 'scene': return <MapPin size={14} className="text-blue-400" />
-      case 'info': return <Info size={14} className="text-green-400" />
-      case 'url': return <Link2 size={14} className="text-purple-400" />
+      case 'scene': return <MapPin size={18} className="text-blue-400" />
+      case 'info': return <Info size={18} className="text-green-400" />
+      case 'url': return <Link2 size={18} className="text-purple-400" />
     }
   }
 
@@ -547,14 +547,14 @@ export function ProjectEditor() {
               <div key={hotspot.id} className="hotspot-item">
                 <div className="hotspot-info">
                   {getHotspotIcon(hotspot.type)}
-                  <span className="text-sm">{getHotspotLabel(hotspot)}</span>
+                  <span className="text-base font-normal">{getHotspotLabel(hotspot)}</span>
                 </div>
                 <div className="hotspot-actions">
                   <button 
                     className="hotspot-action-btn"
                     onClick={() => handleEditHotspot(hotspot)}
                   >
-                    <Pencil size={14} />
+                    <Pencil size={18} />
                   </button>
                   <button 
                     className="hotspot-action-btn text-red-500"
@@ -563,7 +563,7 @@ export function ProjectEditor() {
                       setDeleteConfirmOpen(true)
                     }}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={18} />
                   </button>
                 </div>
               </div>

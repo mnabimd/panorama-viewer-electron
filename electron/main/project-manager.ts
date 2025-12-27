@@ -1,4 +1,4 @@
-import { ipcMain, app } from 'electron'
+import { ipcMain, app, dialog } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -386,6 +386,93 @@ export function setupProjectHandlers() {
       return { success: true, scene: metadata.scenes[sceneIndex] }
     } catch (error) {
       console.error('Failed to delete all hotspots:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('add-scene', async (_, { projectId, sceneName, imagePath, isNewUpload }: { 
+    projectId: string, 
+    sceneName: string, 
+    imagePath: string,
+    isNewUpload?: boolean
+  }) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      let finalImagePath = imagePath
+      
+      // If it's a new upload (external file), copy it to the project's scenes folder
+      if (isNewUpload) {
+        const scenesDir = path.join(projectPath, 'scenes')
+        
+        // Ensure scenes directory exists
+        try {
+          await fs.access(scenesDir)
+        } catch {
+          await fs.mkdir(scenesDir, { recursive: true })
+        }
+        
+        // Generate unique filename
+        const ext = path.extname(imagePath)
+        const newFileName = `scene_${randomUUID().slice(0, 8)}${ext}`
+        const destPath = path.join(scenesDir, newFileName)
+        
+        // Copy the file
+        await fs.copyFile(imagePath, destPath)
+        
+        // Use relative path from project root
+        finalImagePath = destPath
+      }
+      
+      // Create new scene
+      const newScene: Scene = {
+        id: `scene_${randomUUID().slice(0, 8)}`,
+        name: sceneName,
+        imagePath: finalImagePath,
+        hotspots: [],
+        isVisible: true
+      }
+      
+      // Add scene to project
+      if (!Array.isArray(metadata.scenes)) {
+        metadata.scenes = []
+      }
+      metadata.scenes.push(newScene)
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, scene: newScene }
+    } catch (error) {
+      console.error('Failed to add scene:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('select-image-file', async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+          { name: 'Images', extensions: ['jpg', 'jpeg'] }
+        ]
+      })
+      
+      if (result.canceled || result.filePaths.length === 0) {
+        return { canceled: true }
+      }
+      
+      return { canceled: false, filePath: result.filePaths[0] }
+    } catch (error) {
+      console.error('Failed to select image file:', error)
       throw error
     }
   })

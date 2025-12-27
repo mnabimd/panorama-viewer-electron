@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { HotspotDialog } from "@/components/HotspotDialog"
+import { AddSceneDialog } from "@/components/AddSceneDialog"
 import "./ProjectEditor.css"
 
 // Hotspot types
@@ -89,6 +90,9 @@ export function ProjectEditor() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false)
   const [hotspotToDelete, setHotspotToDelete] = useState<string | null>(null)
+  
+  // Add scene dialog state
+  const [isAddSceneDialogOpen, setIsAddSceneDialogOpen] = useState(false)
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -354,6 +358,19 @@ export function ProjectEditor() {
     return 'Hotspot'
   }
 
+  const handleNewImage = () => {
+    setIsAddSceneDialogOpen(true)
+  }
+
+  const handleSceneAdded = async () => {
+    await refreshProject()
+    setIsAddSceneDialogOpen(false)
+    toast({
+      title: "Success",
+      description: "Scene added successfully",
+    })
+  }
+
   if (!project) {
     return <div className="flex items-center justify-center h-screen bg-[#1a1a1a] text-white">Loading...</div>
   }
@@ -413,7 +430,7 @@ export function ProjectEditor() {
             />
           </div>
 
-          <Button className="new-image-btn">
+          <Button className="new-image-btn" onClick={handleNewImage}>
             <Plus size={16} className="mr-2" /> New Image
           </Button>
 
@@ -604,6 +621,15 @@ export function ProjectEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Scene Dialog */}
+      <AddSceneDialog
+        open={isAddSceneDialogOpen}
+        onOpenChange={setIsAddSceneDialogOpen}
+        projectId={project.id}
+        existingScenes={scenes}
+        onSceneAdded={handleSceneAdded}
+      />
     </div>
   )
 }

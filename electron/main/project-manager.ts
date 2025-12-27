@@ -55,6 +55,7 @@ interface Scene {
   hotspots: Hotspot[]
   thumbnail?: string
   description?: string
+  isVisible?: boolean  // Controls visibility in sidebar (default: true)
 }
 
 interface ProjectMetadata {
@@ -226,6 +227,165 @@ export function setupProjectHandlers() {
       return { success: true, project: updatedMetadata }
     } catch (error) {
       console.error('Failed to rename project:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('add-hotspot', async (_, { projectId, sceneId, hotspotData }: { 
+    projectId: string, 
+    sceneId: string, 
+    hotspotData: Omit<Hotspot, 'id'> 
+  }) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // Create new hotspot with generated ID
+      const newHotspot: Hotspot = {
+        ...hotspotData,
+        id: `hotspot_${randomUUID().slice(0, 8)}`
+      } as Hotspot
+      
+      // Add hotspot to scene
+      metadata.scenes[sceneIndex].hotspots.push(newHotspot)
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, hotspot: newHotspot, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to add hotspot:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('update-hotspot', async (_, { projectId, sceneId, hotspotId, hotspotData }: { 
+    projectId: string, 
+    sceneId: string, 
+    hotspotId: string,
+    hotspotData: Partial<Hotspot> 
+  }) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // Find and update the hotspot
+      const hotspotIndex = metadata.scenes[sceneIndex].hotspots.findIndex(h => h.id === hotspotId)
+      if (hotspotIndex === -1) {
+        throw new Error('Hotspot not found')
+      }
+      
+      metadata.scenes[sceneIndex].hotspots[hotspotIndex] = {
+        ...metadata.scenes[sceneIndex].hotspots[hotspotIndex],
+        ...hotspotData,
+        id: hotspotId // Preserve the ID
+      } as Hotspot
+      
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, hotspot: metadata.scenes[sceneIndex].hotspots[hotspotIndex], scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to update hotspot:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('delete-hotspot', async (_, { projectId, sceneId, hotspotId }: { 
+    projectId: string, 
+    sceneId: string, 
+    hotspotId: string 
+  }) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // Filter out the hotspot
+      metadata.scenes[sceneIndex].hotspots = metadata.scenes[sceneIndex].hotspots.filter(
+        h => h.id !== hotspotId
+      )
+      
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to delete hotspot:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('delete-all-hotspots', async (_, { projectId, sceneId }: { 
+    projectId: string, 
+    sceneId: string 
+  }) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // Clear all hotspots
+      metadata.scenes[sceneIndex].hotspots = []
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to delete all hotspots:', error)
       throw error
     }
   })

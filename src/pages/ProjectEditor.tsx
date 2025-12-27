@@ -11,11 +11,16 @@ import {
   ChevronRight,
   ChevronLeft as ChevronLeftIcon,
   Eye,
-  EyeOff
+  EyeOff,
+  Link2,
+  Info,
+  MapPin
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { HotspotDialog } from "@/components/HotspotDialog"
 import "./ProjectEditor.css"
 
 // Dummy data for initial render, will be replaced/merged with real data logic later
@@ -24,11 +29,39 @@ const DUMMY_SCENES = [
   { id: '2', name: 'bathroom', image: '/_dummy_reusable_data/_dummy2.jpg', isVisible: true },
 ]
 
-const DUMMY_HOTSPOTS = [
-  { id: '1', name: 'kitchen' },
-  { id: '2', name: 'bath' },
-  { id: '3', name: 'room' },
-]
+// Hotspot types
+type HotspotType = 'scene' | 'info' | 'url'
+
+interface BaseHotspot {
+  id: string
+  type: HotspotType
+  position: {
+    yaw: number
+    pitch: number
+  }
+  tooltip?: string
+}
+
+interface SceneHotspot extends BaseHotspot {
+  type: 'scene'
+  targetSceneId: string
+  transition?: 'fade' | 'slide' | 'none'
+}
+
+interface InfoHotspot extends BaseHotspot {
+  type: 'info'
+  title: string
+  content: string
+  imageUrl?: string
+}
+
+interface UrlHotspot extends BaseHotspot {
+  type: 'url'
+  url: string
+  openInNewTab?: boolean
+}
+
+type Hotspot = SceneHotspot | InfoHotspot | UrlHotspot
 
 export function ProjectEditor() {
   const navigate = useNavigate()
@@ -44,6 +77,14 @@ export function ProjectEditor() {
   const [scenes, setScenes] = useState(DUMMY_SCENES)
   const [activeScene, setActiveScene] = useState('1')
   const [searchQuery, setSearchQuery] = useState("")
+  
+  // Hotspot management state
+  const [hotspots, setHotspots] = useState<Hotspot[]>([])
+  const [isHotspotDialogOpen, setIsHotspotDialogOpen] = useState(false)
+  const [editingHotspot, setEditingHotspot] = useState<Hotspot | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false)
+  const [hotspotToDelete, setHotspotToDelete] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -54,6 +95,8 @@ export function ProjectEditor() {
         if (result) {
           setProject(result)
           setProjectName(result.name)
+          // Load hotspots from active scene
+          loadHotspotsForScene(result, activeScene)
         } else {
           toast({
             title: "Error",
@@ -73,6 +116,36 @@ export function ProjectEditor() {
     }
     fetchProject()
   }, [id, navigate, toast])
+
+  // Load hotspots when active scene changes
+  useEffect(() => {
+    if (project) {
+      loadHotspotsForScene(project, activeScene)
+    }
+  }, [activeScene, project])
+
+  const loadHotspotsForScene = (projectData: any, sceneId: string) => {
+    const scene = projectData.scenes?.find((s: any) => s.id === sceneId)
+    if (scene && scene.hotspots) {
+      setHotspots(scene.hotspots)
+    } else {
+      setHotspots([])
+    }
+  }
+
+  const refreshProject = async () => {
+    if (!id) return
+    try {
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('get-project-by-id', id)
+      if (result) {
+        setProject(result)
+        loadHotspotsForScene(result, activeScene)
+      }
+    } catch (error) {
+      console.error('Failed to refresh project:', error)
+    }
+  }
 
   const handleRename = async () => {
     if (!project || !projectName.trim() || projectName === project.name) {
@@ -120,6 +193,129 @@ export function ProjectEditor() {
   const filteredScenes = scenes.filter(scene => 
     scene.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  // Hotspot management handlers
+  const handleAddHotspot = () => {
+    setEditingHotspot(null)
+    setIsHotspotDialogOpen(true)
+  }
+
+  const handleEditHotspot = (hotspot: Hotspot) => {
+    setEditingHotspot(hotspot)
+    setIsHotspotDialogOpen(true)
+  }
+
+  const handleSubmitHotspot = async (hotspotData: Omit<Hotspot, 'id'>) => {
+    try {
+      if (editingHotspot) {
+        // Update existing hotspot
+        // @ts-ignore
+        await window.ipcRenderer.invoke('update-hotspot', {
+          projectId: project.id,
+          sceneId: activeScene,
+          hotspotId: editingHotspot.id,
+          hotspotData
+        })
+        toast({
+          title: "Success",
+          description: "Hotspot updated successfully",
+        })
+      } else {
+        // Add new hotspot
+        // @ts-ignore
+        await window.ipcRenderer.invoke('add-hotspot', {
+          projectId: project.id,
+          sceneId: activeScene,
+          hotspotData
+        })
+        toast({
+          title: "Success",
+          description: "Hotspot added successfully",
+        })
+      }
+      await refreshProject()
+      setIsHotspotDialogOpen(false)
+    } catch (error) {
+      console.error('Failed to submit hotspot:', error)
+      toast({
+        title: "Error",
+        description: "Failed to save hotspot",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteHotspot = async () => {
+    if (!hotspotToDelete) return
+    
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('delete-hotspot', {
+        projectId: project.id,
+        sceneId: activeScene,
+        hotspotId: hotspotToDelete
+      })
+      toast({
+        title: "Success",
+        description: "Hotspot deleted successfully",
+      })
+      await refreshProject()
+    } catch (error) {
+      console.error('Failed to delete hotspot:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete hotspot",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleteConfirmOpen(false)
+      setHotspotToDelete(null)
+    }
+  }
+
+  const handleDeleteAllHotspots = async () => {
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('delete-all-hotspots', {
+        projectId: project.id,
+        sceneId: activeScene
+      })
+      toast({
+        title: "Success",
+        description: "All hotspots deleted successfully",
+      })
+      await refreshProject()
+    } catch (error) {
+      console.error('Failed to delete all hotspots:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete all hotspots",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleteAllConfirmOpen(false)
+    }
+  }
+
+  const getHotspotIcon = (type: HotspotType) => {
+    switch (type) {
+      case 'scene': return <MapPin size={14} className="text-blue-400" />
+      case 'info': return <Info size={14} className="text-green-400" />
+      case 'url': return <Link2 size={14} className="text-purple-400" />
+    }
+  }
+
+  const getHotspotLabel = (hotspot: Hotspot) => {
+    if (hotspot.type === 'scene') {
+      const targetScene = scenes.find(s => s.id === hotspot.targetSceneId)
+      return targetScene?.name || 'Unknown Scene'
+    } else if (hotspot.type === 'info') {
+      return hotspot.title
+    } else if (hotspot.type === 'url') {
+      return hotspot.url.length > 30 ? hotspot.url.substring(0, 30) + '...' : hotspot.url
+    }
+    return 'Hotspot'
+  }
 
   if (!project) {
     return <div className="flex items-center justify-center h-screen bg-[#1a1a1a] text-white">Loading...</div>
@@ -265,23 +461,48 @@ export function ProjectEditor() {
         <div className="hotspots-section">
           <div className="hotspots-header">
             <span>Hotspots</span>
-            <span className="delete-all-btn">Delete All</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="delete-all-btn text-red-500 hover:text-red-400 h-auto p-0"
+              onClick={() => hotspots.length > 0 && setDeleteAllConfirmOpen(true)}
+              disabled={hotspots.length === 0}
+            >
+              Delete All
+            </Button>
           </div>
 
-          <div className="text-xs text-gray-500 mb-2">{DUMMY_HOTSPOTS.length} Hotspot</div>
+          <Button 
+            onClick={handleAddHotspot} 
+            className="w-full mb-3 bg-orange-500 hover:bg-orange-600"
+            size="sm"
+          >
+            <Plus size={16} className="mr-2" /> Add Hotspot
+          </Button>
+
+          <div className="text-xs text-gray-500 mb-2">{hotspots.length} Hotspot{hotspots.length !== 1 ? 's' : ''}</div>
 
           <div className="hotspot-list">
-            {DUMMY_HOTSPOTS.map((hotspot) => (
+            {hotspots.map((hotspot) => (
               <div key={hotspot.id} className="hotspot-item">
                 <div className="hotspot-info">
-                  <div className="w-2 h-2 rounded-full bg-white"></div>
-                  <span>{hotspot.name}</span>
+                  {getHotspotIcon(hotspot.type)}
+                  <span className="text-sm">{getHotspotLabel(hotspot)}</span>
                 </div>
                 <div className="hotspot-actions">
-                  <button className="hotspot-action-btn">
+                  <button 
+                    className="hotspot-action-btn"
+                    onClick={() => handleEditHotspot(hotspot)}
+                  >
                     <Pencil size={14} />
                   </button>
-                  <button className="hotspot-action-btn text-red-500">
+                  <button 
+                    className="hotspot-action-btn text-red-500"
+                    onClick={() => {
+                      setHotspotToDelete(hotspot.id)
+                      setDeleteConfirmOpen(true)
+                    }}
+                  >
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -290,6 +511,62 @@ export function ProjectEditor() {
           </div>
         </div>
       </aside>
+
+      {/* Hotspot Dialog */}
+      <HotspotDialog
+        open={isHotspotDialogOpen}
+        onOpenChange={setIsHotspotDialogOpen}
+        mode={editingHotspot ? 'edit' : 'add'}
+        existingHotspot={editingHotspot || undefined}
+        availableScenes={scenes}
+        onSubmit={handleSubmitHotspot}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="bg-[#1a1a1a] text-white border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Hotspot</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete this hotspot? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-[#252525] border-gray-700 hover:bg-[#333]">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteHotspot}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Confirmation Dialog */}
+      <AlertDialog open={deleteAllConfirmOpen} onOpenChange={setDeleteAllConfirmOpen}>
+        <AlertDialogContent className="bg-[#1a1a1a] text-white border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Hotspots</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete all {hotspots.length} hotspot{hotspots.length !== 1 ? 's' : ''} from this scene? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-[#252525] border-gray-700 hover:bg-[#333]">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAllHotspots}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

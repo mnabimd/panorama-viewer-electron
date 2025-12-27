@@ -81,6 +81,15 @@ async function createWindow() {
     return { action: 'deny' }
   })
 
+  // Add keyboard shortcut to toggle dev tools (F12)
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12') {
+      win?.webContents.toggleDevTools()
+      event.preventDefault()
+    }
+  })
+
+
   // Auto update
   update(win)
 

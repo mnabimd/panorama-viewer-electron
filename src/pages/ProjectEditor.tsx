@@ -23,12 +23,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { HotspotDialog } from "@/components/HotspotDialog"
 import "./ProjectEditor.css"
 
-// Dummy data for initial render, will be replaced/merged with real data logic later
-const DUMMY_SCENES = [
-  { id: '1', name: 'kitchen', image: '/_dummy_reusable_data/_dummy2.jpg', isVisible: true },
-  { id: '2', name: 'bathroom', image: '/_dummy_reusable_data/_dummy2.jpg', isVisible: true },
-]
-
 // Hotspot types
 type HotspotType = 'scene' | 'info' | 'url'
 
@@ -63,6 +57,16 @@ interface UrlHotspot extends BaseHotspot {
 
 type Hotspot = SceneHotspot | InfoHotspot | UrlHotspot
 
+interface Scene {
+  id: string
+  name: string
+  imagePath: string
+  hotspots: Hotspot[]
+  thumbnail?: string
+  description?: string
+  isVisible?: boolean
+}
+
 export function ProjectEditor() {
   const navigate = useNavigate()
   const { id } = useParams()
@@ -74,8 +78,8 @@ export function ProjectEditor() {
   
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
   
-  const [scenes, setScenes] = useState(DUMMY_SCENES)
-  const [activeScene, setActiveScene] = useState('1')
+  const [scenes, setScenes] = useState<Scene[]>([])
+  const [activeScene, setActiveScene] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState("")
   
   // Hotspot management state
@@ -95,8 +99,22 @@ export function ProjectEditor() {
         if (result) {
           setProject(result)
           setProjectName(result.name)
-          // Load hotspots from active scene
-          loadHotspotsForScene(result, activeScene)
+          
+          // Load scenes from project
+          let scenesList: Scene[] = []
+          if (Array.isArray(result.scenes)) {
+            scenesList = result.scenes
+          } else if (result.scenes && typeof result.scenes === 'object') {
+            scenesList = Object.values(result.scenes)
+          }
+          
+          setScenes(scenesList)
+          
+          // Set first scene as active if available
+          if (scenesList.length > 0 && !activeScene) {
+            setActiveScene(scenesList[0].id)
+            loadHotspotsForScene(result, scenesList[0].id)
+          }
         } else {
           toast({
             title: "Error",
@@ -119,13 +137,22 @@ export function ProjectEditor() {
 
   // Load hotspots when active scene changes
   useEffect(() => {
-    if (project) {
+    if (project && activeScene) {
       loadHotspotsForScene(project, activeScene)
     }
   }, [activeScene, project])
 
   const loadHotspotsForScene = (projectData: any, sceneId: string) => {
-    const scene = projectData.scenes?.find((s: any) => s.id === sceneId)
+    let scenesList: any[] = []
+    
+    // Handle both array and object formats for scenes
+    if (Array.isArray(projectData.scenes)) {
+      scenesList = projectData.scenes
+    } else if (projectData.scenes && typeof projectData.scenes === 'object') {
+      scenesList = Object.values(projectData.scenes)
+    }
+
+    const scene = scenesList.find((s: any) => s.id === sceneId)
     if (scene && scene.hotspots) {
       setHotspots(scene.hotspots)
     } else {
@@ -140,6 +167,16 @@ export function ProjectEditor() {
       const result = await window.ipcRenderer.invoke('get-project-by-id', id)
       if (result) {
         setProject(result)
+        
+        // Reload scenes
+        let scenesList: Scene[] = []
+        if (Array.isArray(result.scenes)) {
+          scenesList = result.scenes
+        } else if (result.scenes && typeof result.scenes === 'object') {
+          scenesList = Object.values(result.scenes)
+        }
+        setScenes(scenesList)
+        
         loadHotspotsForScene(result, activeScene)
       }
     } catch (error) {
@@ -392,19 +429,19 @@ export function ProjectEditor() {
                 onClick={() => setActiveScene(scene.id)}
               >
                 <img 
-                  src={scene.image} 
+                  src={`file://${scene.imagePath}`}
                   alt={scene.name} 
                   className="scene-thumbnail" 
-                  style={{ opacity: scene.isVisible ? 1 : 0.4 }}
+                  style={{ opacity: scene.isVisible !== false ? 1 : 0.4 }}
                 />
                 <div className="scene-name">{scene.name}</div>
                 
                 <button 
-                  className={`visibility-toggle ${!scene.isVisible ? 'is-hidden' : ''}`}
+                  className={`visibility-toggle ${scene.isVisible === false ? 'is-hidden' : ''}`}
                   onClick={(e) => toggleSceneVisibility(e, scene.id)}
-                  title={scene.isVisible ? "Hide scene" : "Show scene"}
+                  title={scene.isVisible !== false ? "Hide scene" : "Show scene"}
                 >
-                  {scene.isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                  {scene.isVisible !== false ? <Eye size={14} /> : <EyeOff size={14} />}
                 </button>
 
                 {activeScene === scene.id && (

@@ -187,7 +187,7 @@ export function HotspotDialog({
           <DialogTitle>{mode === 'add' ? 'Add New Hotspot' : 'Edit Hotspot'}</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 bg-[red]">
           {/* Hotspot Type Selection */}
           <div className="space-y-2">
             <Label>Hotspot Type</Label>

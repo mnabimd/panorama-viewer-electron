@@ -190,20 +190,26 @@ export function ProjectEditor() {
       {/* Center Content */}
       <main className="editor-main">
         <div className="text-gray-500">360° Viewer Placeholder</div>
+        
+        {/* Right Sidebar Toggle Button - Outside sidebar so it's always visible */}
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={toggleRightSidebar}
+          className="absolute top-4 right-4 z-10 bg-[#252525] hover:bg-[#333]"
+        >
+          {rightSidebarOpen ? <ChevronRight /> : <ChevronLeft />}
+        </Button>
       </main>
 
       {/* Right Sidebar */}
       <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
         <div className="right-sidebar-header">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={toggleRightSidebar}
-          >
-            {rightSidebarOpen ? <ChevronRight /> : <ChevronLeft />}
+          <Button variant="ghost" size="icon">
+            <Play size={18} /> 
           </Button>
           <Button className="publish-btn" size="sm">
-            <Play size={14} className="mr-1" /> Publish
+            Publish
           </Button>
         </div>
 

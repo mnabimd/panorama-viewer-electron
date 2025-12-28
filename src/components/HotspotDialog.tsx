@@ -52,6 +52,7 @@ interface HotspotDialogProps {
   onOpenChange: (open: boolean) => void
   mode: 'add' | 'edit'
   existingHotspot?: Hotspot
+  initialPosition?: { yaw: number; pitch: number }
   availableScenes: Scene[]
   onSubmit: (hotspotData: Omit<Hotspot, 'id'>) => Promise<void>
 }
@@ -61,6 +62,7 @@ export function HotspotDialog({
   onOpenChange,
   mode,
   existingHotspot,
+  initialPosition,
   availableScenes,
   onSubmit
 }: HotspotDialogProps) {
@@ -120,8 +122,8 @@ export function HotspotDialog({
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
-      // Dummy position values as per user request
-      const position = { yaw: 0, pitch: 0 }
+      // Use initialPosition if provided (from panorama click), otherwise use dummy values
+      const position = initialPosition || { yaw: 0, pitch: 0 }
       
       let hotspotData: Omit<Hotspot, 'id'>
       

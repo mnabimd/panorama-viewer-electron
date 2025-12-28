@@ -8,6 +8,7 @@ import { EditorRightSidebarHeader } from "@/components/EditorRightSidebarHeader"
 import { SceneSettingsPanel } from "@/components/SceneSettingsPanel"
 import { HotspotsPanel } from "@/components/HotspotsPanel"
 import { EditorDialogs } from "@/components/EditorDialogs"
+import { PanoramaViewer } from "@/components/PanoramaViewer"
 import { useProject } from "@/hooks/useProject"
 import { useHotspots } from "@/hooks/useHotspots"
 import { useScenes } from "@/hooks/useScenes"
@@ -105,6 +106,8 @@ export function ProjectEditor() {
 
   // UI state
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
+  const [isAddingHotspot, setIsAddingHotspot] = useState(false)
+  const [pendingHotspotPosition, setPendingHotspotPosition] = useState<{yaw: number; pitch: number} | null>(null)
 
   // Load hotspots when active scene changes
   useEffect(() => {
@@ -161,6 +164,31 @@ export function ProjectEditor() {
     }
   }
 
+  // Handle panorama click for adding hotspot
+  const handlePanoramaClick = (position: { yaw: number; pitch: number }) => {
+    if (isAddingHotspot) {
+      setPendingHotspotPosition(position)
+      setIsHotspotDialogOpen(true)
+      setIsAddingHotspot(false)
+    }
+  }
+
+  // Handle scene hotspot click for navigation
+  const handleSceneHotspotClick = (targetSceneId: string) => {
+    setActiveScene(targetSceneId)
+  }
+
+  // Handle regular hotspot click (info/url)
+  const handleHotspotClickInViewer = (hotspot: any) => {
+    if (hotspot.type === 'url') {
+      // @ts-ignore
+      window.ipcRenderer.invoke('open-external-url', hotspot.url)
+    } else if (hotspot.type === 'info') {
+      // Could open an info modal here
+      alert(`${hotspot.title}\n\n${hotspot.content}`)
+    }
+  }
+
   if (isLoading || !project) {
     return <div className="flex items-center justify-center h-screen bg-[#1a1a1a] text-white">Loading...</div>
   }
@@ -188,7 +216,16 @@ export function ProjectEditor() {
 
       {/* Center Content */}
       <main className="editor-main">
-        <div className="text-gray-500">360° Viewer Placeholder</div>
+        {currentScene && (
+          <PanoramaViewer
+            scene={currentScene}
+            hotspots={hotspots}
+            isAddingHotspot={isAddingHotspot}
+            onHotspotClick={handleHotspotClickInViewer}
+            onPanoramaClick={handlePanoramaClick}
+            onSceneHotspotClick={handleSceneHotspotClick}
+          />
+        )}
         
         {/* Right Sidebar Toggle Button */}
         <Button 
@@ -203,7 +240,10 @@ export function ProjectEditor() {
 
       {/* Right Sidebar */}
       <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
-        <EditorRightSidebarHeader />
+        <EditorRightSidebarHeader 
+          isAddingHotspot={isAddingHotspot}
+          onToggleAddHotspot={() => setIsAddingHotspot(!isAddingHotspot)}
+        />
 
         <Accordion type="multiple" defaultValue={["scene-settings", "hotspots"]} className="px-4">
           {/* Scene Settings Section */}
@@ -262,6 +302,8 @@ export function ProjectEditor() {
         isHotspotDialogOpen={isHotspotDialogOpen}
         setIsHotspotDialogOpen={setIsHotspotDialogOpen}
         editingHotspot={editingHotspot}
+        pendingHotspotPosition={pendingHotspotPosition}
+        onHotspotDialogClose={() => setPendingHotspotPosition(null)}
         scenes={scenes}
         onSubmitHotspot={(data) => handleSubmitHotspot(data, refreshProject)}
         deleteConfirmOpen={deleteConfirmOpen}

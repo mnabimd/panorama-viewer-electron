@@ -12,8 +12,10 @@ interface EditorDialogsProps {
   isHotspotDialogOpen: boolean
   setIsHotspotDialogOpen: (open: boolean) => void
   editingHotspot: Hotspot | null
+  pendingHotspotPosition?: { yaw: number; pitch: number } | null
+  onHotspotDialogClose?: () => void
   scenes: Scene[]
-  onSubmitHotspot: (data: any) => void
+  onSubmitHotspot: (data: Omit<Hotspot, 'id'>) => Promise<void>
   
   // Delete Hotspot Dialog
   deleteConfirmOpen: boolean
@@ -59,6 +61,8 @@ export function EditorDialogs({
   isHotspotDialogOpen,
   setIsHotspotDialogOpen,
   editingHotspot,
+  pendingHotspotPosition,
+  onHotspotDialogClose,
   scenes,
   onSubmitHotspot,
   deleteConfirmOpen,
@@ -94,9 +98,15 @@ export function EditorDialogs({
       {/* Hotspot Dialog */}
       <HotspotDialog
         open={isHotspotDialogOpen}
-        onOpenChange={setIsHotspotDialogOpen}
+        onOpenChange={(open) => {
+          setIsHotspotDialogOpen(open)
+          if (!open && onHotspotDialogClose) {
+            onHotspotDialogClose()
+          }
+        }}
         mode={editingHotspot ? 'edit' : 'add'}
         existingHotspot={editingHotspot || undefined}
+        initialPosition={pendingHotspotPosition || undefined}
         availableScenes={scenes}
         onSubmit={onSubmitHotspot}
       />

@@ -4,12 +4,20 @@
   height: 100%;
   position: relative;
   background: #000;
+  /* GPU acceleration for smoother rendering */
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .panorama-viewer {
   width: 100%;
   height: 100%;
+  /* GPU acceleration */
+  transform: translateZ(0);
 }
+
 
 /* Loading State */
 .panorama-loading {
@@ -26,12 +34,16 @@
 /* Custom Marker Styles */
 .custom-marker {
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.15s ease-out;
+  /* GPU acceleration for smoother animations */
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .custom-marker:hover {
-  transform: scale(1.2);
+  transform: scale(1.2) translateZ(0);
 }
+
 
 .scene-marker svg circle {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
@@ -58,6 +70,16 @@
 .psv-container {
   width: 100%;
   height: 100%;
+  /* GPU acceleration */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Optimize canvas rendering */
+.psv-canvas-container {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Tooltip styling */

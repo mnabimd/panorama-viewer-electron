@@ -42,6 +42,7 @@ export interface Scene {
   thumbnail?: string
   description?: string
   isVisible?: boolean
+  isFeatured?: boolean  // Marks the scene as featured/indexed (only one can be featured)
 }
 
 // Project interface

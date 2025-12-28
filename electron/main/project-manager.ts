@@ -57,6 +57,7 @@ interface Scene {
   thumbnail?: string
   description?: string
   isVisible?: boolean  // Controls visibility in sidebar (default: true)
+  isFeatured?: boolean  // Marks the scene as featured/indexed (only one can be featured)
 }
 
 interface ProjectMetadata {
@@ -673,6 +674,50 @@ export function setupProjectHandlers() {
       return { success: true, scene: metadata.scenes[sceneIndex] }
     } catch (error) {
       console.error('Failed to replace scene image:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toggle-featured-scene', async (_, { projectId, sceneId, isFeatured }: { 
+    projectId: string, 
+    sceneId: string,
+    isFeatured: boolean 
+  }) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // If marking as featured, unfeature all other scenes (only one can be featured)
+      if (isFeatured) {
+        metadata.scenes.forEach((scene, idx) => {
+          if (idx !== sceneIndex) {
+            scene.isFeatured = false
+          }
+        })
+      }
+      
+      // Update the target scene
+      metadata.scenes[sceneIndex].isFeatured = isFeatured
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to toggle featured scene:', error)
       throw error
     }
   })

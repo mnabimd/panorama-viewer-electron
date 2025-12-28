@@ -99,6 +99,9 @@ export function ProjectEditor() {
   const [replaceImagePath, setReplaceImagePath] = useState<string | null>(null)
   const [replaceSceneId, setReplaceSceneId] = useState<string | null>(null)
   const [isReplacingImage, setIsReplacingImage] = useState(false)
+  
+  // Delete all scenes state
+  const [deleteAllScenesConfirmOpen, setDeleteAllScenesConfirmOpen] = useState(false)
 
   // Load hotspots when active scene changes
   useEffect(() => {
@@ -219,6 +222,44 @@ export function ProjectEditor() {
     }
   }
 
+  const handleDeleteAllScenes = async () => {
+    if (!project || scenes.length <= 1) return
+
+    try {
+      // Delete all scenes except the first one (can't delete all scenes)
+      const scenesToDelete = scenes.slice(1)
+      
+      for (const scene of scenesToDelete) {
+        await deleteScene(project.id, scene.id, refreshProject)
+      }
+      
+      // Set the first scene as active
+      if (scenes.length > 0) {
+        setActiveScene(scenes[0].id)
+      }
+      
+      setDeleteAllScenesConfirmOpen(false)
+    } catch (error) {
+      console.error('Failed to delete all scenes:', error)
+    }
+  }
+
+  const handleToggleFeatured = async (checked: boolean) => {
+    if (!project || !activeScene) return
+
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('toggle-featured-scene', {
+        projectId: project.id,
+        sceneId: activeScene,
+        isFeatured: checked
+      })
+      await refreshProject()
+    } catch (error) {
+      console.error('Failed to toggle featured scene:', error)
+    }
+  }
+
   if (isLoading || !project) {
     return <div className="flex items-center justify-center h-screen bg-[#1a1a1a] text-white">Loading...</div>
   }
@@ -282,8 +323,17 @@ export function ProjectEditor() {
             <Plus size={16} className="mr-2" /> New Image
           </Button>
 
-          <div className="add-item-section">
-            <Plus size={16} /> Add item
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-xs text-gray-400">{scenes.length} scene{scenes.length !== 1 ? 's' : ''}</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="delete-all-btn text-red-500 hover:text-red-400 h-auto p-0"
+              onClick={() => scenes.length > 1 && setDeleteAllScenesConfirmOpen(true)}
+              disabled={scenes.length <= 1}
+            >
+              Delete All
+            </Button>
           </div>
 
           <div className="scene-list">
@@ -393,6 +443,18 @@ export function ProjectEditor() {
                     <Switch
                       checked={currentScene.isVisible !== false}
                       onCheckedChange={(checked) => toggleSceneVisibility({ stopPropagation: () => {} } as React.MouseEvent, activeScene)}
+                    />
+                  </div>
+
+                  {/* Featured Scene */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs text-gray-400">Featured Scene</Label>
+                      <p className="text-xs text-gray-600">Mark as main/indexed scene</p>
+                    </div>
+                    <Switch
+                      checked={currentScene.isFeatured === true}
+                      onCheckedChange={handleToggleFeatured}
                     />
                   </div>
 
@@ -589,6 +651,29 @@ export function ProjectEditor() {
               disabled={isDeletingScene}
             >
               {isDeletingScene ? 'Deleting...' : 'Delete Scene'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Scenes Confirmation Dialog */}
+      <AlertDialog open={deleteAllScenesConfirmOpen} onOpenChange={setDeleteAllScenesConfirmOpen}>
+        <AlertDialogContent className="bg-[#1a1a1a] text-white border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Scenes</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete all {scenes.length - 1} scene{scenes.length - 1 !== 1 ? 's' : ''}? The first scene will be kept as at least one scene is required. This will also delete all hotspots in these scenes. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-[#252525] border-gray-700 hover:bg-[#333]">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAllScenes}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

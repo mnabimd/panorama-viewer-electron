@@ -18,9 +18,11 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { HotspotDialog } from "@/components/HotspotDialog"
 import { AddSceneDialog } from "@/components/AddSceneDialog"
+import { ImageGalleryPicker } from "@/components/ImageGalleryPicker"
 import { useProject } from "@/hooks/useProject"
 import { useHotspots } from "@/hooks/useHotspots"
 import { useScenes } from "@/hooks/useScenes"
@@ -91,6 +93,12 @@ export function ProjectEditor() {
   const [deleteSceneConfirmOpen, setDeleteSceneConfirmOpen] = useState(false)
   const [allHotspotsVisible, setAllHotspotsVisible] = useState(true)
   const [isDeletingScene, setIsDeletingScene] = useState(false)
+  
+  // Replace image state
+  const [isReplaceImageOpen, setIsReplaceImageOpen] = useState(false)
+  const [replaceImagePath, setReplaceImagePath] = useState<string | null>(null)
+  const [replaceSceneId, setReplaceSceneId] = useState<string | null>(null)
+  const [isReplacingImage, setIsReplacingImage] = useState(false)
 
   // Load hotspots when active scene changes
   useEffect(() => {
@@ -173,6 +181,41 @@ export function ProjectEditor() {
       } catch (error) {
         console.error('Failed to toggle hotspot visibility:', error)
       }
+    }
+  }
+
+  const handleReplaceImage = () => {
+    setReplaceImagePath(null)
+    setReplaceSceneId(null)
+    setIsReplaceImageOpen(true)
+  }
+
+  const handleImageSelect = (imagePath: string, sceneId: string | null) => {
+    setReplaceImagePath(imagePath || null)
+    setReplaceSceneId(sceneId)
+  }
+
+  const handleConfirmReplaceImage = async () => {
+    if (!project || !activeScene || !replaceImagePath) return
+
+    setIsReplacingImage(true)
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('replace-scene-image', {
+        projectId: project.id,
+        sceneId: activeScene,
+        newImagePath: replaceImagePath,
+        isNewUpload: replaceSceneId === null
+      })
+      
+      await refreshProject()
+      setIsReplaceImageOpen(false)
+      setReplaceImagePath(null)
+      setReplaceSceneId(null)
+    } catch (error) {
+      console.error('Failed to replace scene image:', error)
+    } finally {
+      setIsReplacingImage(false)
     }
   }
 
@@ -365,6 +408,19 @@ export function ProjectEditor() {
                     />
                   </div>
 
+                  {/* Replace Scene Image */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-400">Replace Scene Image</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-gray-700 hover:bg-gray-800"
+                      onClick={handleReplaceImage}
+                    >
+                      Choose New Image
+                    </Button>
+                  </div>
+
                   {/* Delete Scene */}
                   <Button
                     variant="destructive"
@@ -537,6 +593,44 @@ export function ProjectEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Replace Scene Image Dialog */}
+      <Dialog open={isReplaceImageOpen} onOpenChange={setIsReplaceImageOpen}>
+        <DialogContent className="sm:max-w-[600px] bg-[#1a1a1a] text-white border-gray-700 max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Replace Scene Image</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="text-sm text-gray-400 mb-2 block">Select New Image</Label>
+              <ImageGalleryPicker
+                existingScenes={scenes.filter(s => s.id !== activeScene)}
+                selectedImagePath={replaceImagePath}
+                selectedSceneId={replaceSceneId}
+                onImageSelect={handleImageSelect}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsReplaceImageOpen(false)}
+              disabled={isReplacingImage}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmReplaceImage}
+              disabled={isReplacingImage || !replaceImagePath}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              {isReplacingImage ? 'Replacing...' : 'Replace Image'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Scene Dialog */}
       <AddSceneDialog

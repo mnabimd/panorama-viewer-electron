@@ -599,6 +599,84 @@ export function setupProjectHandlers() {
     }
   })
 
+  ipcMain.handle('replace-scene-image', async (_, { projectId, sceneId, newImagePath, isNewUpload }: { 
+    projectId: string, 
+    sceneId: string,
+    newImagePath: string,
+    isNewUpload: boolean
+  }) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      const oldImagePath = metadata.scenes[sceneIndex].imagePath
+      let finalImagePath = newImagePath
+      
+      // If it's a new upload (external file), copy it to the project's scenes folder
+      if (isNewUpload) {
+        const scenesDir = path.join(projectPath, 'scenes')
+        
+        // Ensure scenes directory exists
+        try {
+          await fs.access(scenesDir)
+        } catch {
+          await fs.mkdir(scenesDir, { recursive: true })
+        }
+        
+        // Generate unique filename
+        const ext = path.extname(newImagePath)
+        const newFileName = `scene_${randomUUID().slice(0, 8)}${ext}`
+        const destPath = path.join(scenesDir, newFileName)
+        
+        // Copy the file
+        await fs.copyFile(newImagePath, destPath)
+        
+        // Use the new path
+        finalImagePath = destPath
+      }
+      
+      // Update scene image path
+      metadata.scenes[sceneIndex].imagePath = finalImagePath
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      // Try to delete the old image file (optional, don't fail if it doesn't exist)
+      // Only delete if it was a unique image (not shared with other scenes)
+      if (isNewUpload) {
+        const isImageUsedByOtherScenes = metadata.scenes.some(
+          (s, idx) => idx !== sceneIndex && s.imagePath === oldImagePath
+        )
+        
+        if (!isImageUsedByOtherScenes) {
+          try {
+            await fs.unlink(oldImagePath)
+          } catch (e) {
+            console.warn('Could not delete old scene image file:', e)
+          }
+        }
+      }
+      
+      return { success: true, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to replace scene image:', error)
+      throw error
+    }
+  })
+
   ipcMain.handle('toggle-hotspot-visibility', async (_, { projectId, sceneId, hotspotId, isVisible }: { 
     projectId: string, 
     sceneId: string,

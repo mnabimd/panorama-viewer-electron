@@ -182,7 +182,7 @@ export function ProjectEditor() {
         onSearchChange={setSearchQuery}
         onNewImage={handleNewImage}
         onSceneSelect={setActiveScene}
-        onToggleSceneVisibility={toggleSceneVisibility}
+        onToggleSceneVisibility={(e, sceneId) => project && toggleSceneVisibility(e, project.id, sceneId)}
         onDeleteAllScenes={() => setDeleteAllScenesConfirmOpen(true)}
       />
 
@@ -225,7 +225,7 @@ export function ProjectEditor() {
                 onStartEditSceneName={handleStartEditSceneName}
                 onSaveSceneName={handleSaveSceneName}
                 onCancelEditSceneName={handleCancelEditSceneName}
-                onToggleSceneVisibility={toggleSceneVisibility}
+                onToggleSceneVisibility={(e, sceneId) => project && toggleSceneVisibility(e, project.id, sceneId)}
                 onToggleFeatured={handleToggleFeatured}
                 onToggleAllHotspots={handleToggleAllHotspots}
                 onReplaceImage={handleReplaceImage}

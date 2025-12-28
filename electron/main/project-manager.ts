@@ -787,4 +787,38 @@ export function setupProjectHandlers() {
       throw error
     }
   })
+  ipcMain.handle('toggle-scene-visibility', async (_, { projectId, sceneId, isVisible }: { 
+    projectId: string, 
+    sceneId: string,
+    isVisible: boolean 
+  }) => {
+    try {
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // Update scene visibility
+      metadata.scenes[sceneIndex].isVisible = isVisible
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to toggle scene visibility:', error)
+      throw error
+    }
+  })
 }

@@ -16,11 +16,36 @@ export function useScenes(scenes: Scene[], setScenes: React.Dispatch<React.SetSt
     )
   }, [scenes, searchQuery])
 
-  const toggleSceneVisibility = (e: React.MouseEvent, sceneId: string) => {
+  const toggleSceneVisibility = async (e: React.MouseEvent, projectId: string, sceneId: string) => {
     e.stopPropagation()
+    
+    // Optimistic update
     setScenes(prev => prev.map(s =>
       s.id === sceneId ? { ...s, isVisible: !s.isVisible } : s
     ))
+
+    try {
+      const scene = scenes.find(s => s.id === sceneId)
+      if (!scene) return
+
+      // @ts-ignore
+      await window.ipcRenderer.invoke('toggle-scene-visibility', {
+        projectId,
+        sceneId,
+        isVisible: !scene.isVisible
+      })
+    } catch (error) {
+      console.error('Failed to toggle scene visibility:', error)
+      // Revert on error
+      setScenes(prev => prev.map(s =>
+        s.id === sceneId ? { ...s, isVisible: !s.isVisible } : s
+      ))
+      toast({
+        title: "Error",
+        description: "Failed to update scene visibility",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleNewImage = () => {

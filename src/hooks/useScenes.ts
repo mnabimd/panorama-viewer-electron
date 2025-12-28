@@ -37,6 +37,68 @@ export function useScenes(scenes: Scene[], setScenes: React.Dispatch<React.SetSt
     })
   }
 
+  const renameScene = async (projectId: string, sceneId: string, newName: string, onRefresh: () => Promise<void>) => {
+    if (!newName.trim()) {
+      toast({
+        title: "Error",
+        description: "Scene name cannot be empty",
+        variant: "destructive",
+      })
+      return false
+    }
+
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('rename-scene', {
+        projectId,
+        sceneId,
+        newName: newName.trim()
+      })
+      
+      await onRefresh()
+      toast({
+        title: "Success",
+        description: "Scene renamed successfully",
+        variant: "success",
+      })
+      return true
+    } catch (error) {
+      console.error('Failed to rename scene:', error)
+      toast({
+        title: "Error",
+        description: "Failed to rename scene",
+        variant: "destructive",
+      })
+      return false
+    }
+  }
+
+  const deleteScene = async (projectId: string, sceneId: string, onRefresh: () => Promise<void>) => {
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('delete-scene', {
+        projectId,
+        sceneId
+      })
+      
+      await onRefresh()
+      toast({
+        title: "Success",
+        description: "Scene deleted successfully",
+        variant: "success",
+      })
+      return true
+    } catch (error) {
+      console.error('Failed to delete scene:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete scene",
+        variant: "destructive",
+      })
+      return false
+    }
+  }
+
   return {
     activeScene,
     setActiveScene,
@@ -47,6 +109,8 @@ export function useScenes(scenes: Scene[], setScenes: React.Dispatch<React.SetSt
     setIsAddSceneDialogOpen,
     toggleSceneVisibility,
     handleNewImage,
-    handleSceneAdded
+    handleSceneAdded,
+    renameScene,
+    deleteScene
   }
 }

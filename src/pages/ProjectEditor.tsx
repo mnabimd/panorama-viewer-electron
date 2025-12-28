@@ -9,10 +9,15 @@ import {
   Pencil, 
   ChevronRight,
   Eye,
-  EyeOff
+  EyeOff,
+  Save,
+  X
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { HotspotDialog } from "@/components/HotspotDialog"
 import { AddSceneDialog } from "@/components/AddSceneDialog"
@@ -51,7 +56,9 @@ export function ProjectEditor() {
     setIsAddSceneDialogOpen,
     toggleSceneVisibility,
     handleNewImage,
-    handleSceneAdded
+    handleSceneAdded,
+    renameScene,
+    deleteScene
   } = useScenes(scenes, setScenes)
 
   const {
@@ -71,11 +78,19 @@ export function ProjectEditor() {
     handleEditHotspot,
     handleSubmitHotspot,
     handleDeleteHotspot,
-    handleDeleteAllHotspots
+    handleDeleteAllHotspots,
+    toggleAllHotspotsVisibility
   } = useHotspots(project?.id, activeScene)
 
   // UI state
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
+  
+  // Scene Settings state
+  const [editingSceneName, setEditingSceneName] = useState(false)
+  const [tempSceneName, setTempSceneName] = useState("")
+  const [deleteSceneConfirmOpen, setDeleteSceneConfirmOpen] = useState(false)
+  const [allHotspotsVisible, setAllHotspotsVisible] = useState(true)
+  const [isDeletingScene, setIsDeletingScene] = useState(false)
 
   // Load hotspots when active scene changes
   useEffect(() => {
@@ -93,6 +108,73 @@ export function ProjectEditor() {
   }, [scenes, activeScene, project])
 
   const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen)
+
+  // Scene Settings handlers
+  const currentScene = scenes.find(s => s.id === activeScene)
+
+  const handleStartEditSceneName = () => {
+    if (currentScene) {
+      setTempSceneName(currentScene.name)
+      setEditingSceneName(true)
+    }
+  }
+
+  const handleSaveSceneName = async () => {
+    if (project && activeScene && tempSceneName.trim()) {
+      const success = await renameScene(project.id, activeScene, tempSceneName, refreshProject)
+      if (success) {
+        setEditingSceneName(false)
+      }
+    }
+  }
+
+  const handleCancelEditSceneName = () => {
+    setEditingSceneName(false)
+    setTempSceneName("")
+  }
+
+  const handleDeleteScene = async () => {
+    if (!project || !activeScene || scenes.length <= 1) return
+    
+    setIsDeletingScene(true)
+    try {
+      const success = await deleteScene(project.id, activeScene, refreshProject)
+      if (success) {
+        // Select another scene after deletion
+        const remainingScenes = scenes.filter(s => s.id !== activeScene)
+        if (remainingScenes.length > 0) {
+          setActiveScene(remainingScenes[0].id)
+        }
+        setDeleteSceneConfirmOpen(false)
+      }
+    } finally {
+      setIsDeletingScene(false)
+    }
+  }
+
+  const handleToggleAllHotspots = async (checked: boolean) => {
+    if (project && activeScene) {
+      setAllHotspotsVisible(checked)
+      await toggleAllHotspotsVisibility(checked, refreshProject)
+    }
+  }
+
+  const handleToggleHotspotVisibility = async (hotspotId: string, isVisible: boolean) => {
+    if (project && activeScene) {
+      try {
+        // @ts-ignore
+        await window.ipcRenderer.invoke('toggle-hotspot-visibility', {
+          projectId: project.id,
+          sceneId: activeScene,
+          hotspotId,
+          isVisible
+        })
+        await refreshProject()
+      } catch (error) {
+        console.error('Failed to toggle hotspot visibility:', error)
+      }
+    }
+  }
 
   if (isLoading || !project) {
     return <div className="flex items-center justify-center h-screen bg-[#1a1a1a] text-white">Loading...</div>
@@ -134,7 +216,7 @@ export function ProjectEditor() {
             {!isEditingName && (
               <Pencil 
                 size={14} 
-                className="cursor-pointer text-gray-500 hover:text-white shrink-0"
+                className="cursor-pointer text-gray-500 hover:text-white shrink-0 ml-auto"
                 onClick={() => setIsEditingName(true)} 
               />
             )}
@@ -172,7 +254,7 @@ export function ProjectEditor() {
                   src={`file://${scene.imagePath}`}
                   alt={scene.name} 
                   className="scene-thumbnail" 
-                  style={{ opacity: scene.isVisible !== false ? 1 : 0.4 }}
+                  style={{ opacity: scene.isVisible !== false ? 1 : 0.15 }}
                 />
                 <div className="scene-name">{scene.name}</div>
                 <button 
@@ -213,58 +295,164 @@ export function ProjectEditor() {
           </Button>
         </div>
 
-        <div className="hotspots-section">
-          <div className="hotspots-header">
-            <span>Hotspots</span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="delete-all-btn text-red-500 hover:text-red-400 h-auto p-0"
-              onClick={() => hotspots.length > 0 && setDeleteAllConfirmOpen(true)}
-              disabled={hotspots.length === 0}
-            >
-              Delete All
-            </Button>
-          </div>
+        <Accordion type="multiple" defaultValue={["scene-settings", "hotspots"]} className="px-4">
+          {/* Scene Settings Section */}
+          <AccordionItem value="scene-settings" className="border-gray-700">
+            <AccordionTrigger className="text-sm text-gray-400 hover:text-white py-3">
+              Scene Settings
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-2">
+              {currentScene ? (
+                <>
+                  {/* Scene Name */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-400">Scene Name</Label>
+                    {editingSceneName ? (
+                      <div className="flex gap-2">
+                        <Input
+                          value={tempSceneName}
+                          onChange={(e) => setTempSceneName(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveSceneName()}
+                          className="bg-[#252525] border-gray-700 text-white text-sm"
+                          autoFocus
+                        />
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          onClick={handleSaveSceneName}
+                          className="shrink-0"
+                        >
+                          <Save size={16} />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          onClick={handleCancelEditSceneName}
+                          className="shrink-0"
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div 
+                        className="flex items-center justify-between p-2 bg-[#252525] rounded-md cursor-pointer hover:bg-[#2a2a2a]"
+                        onClick={handleStartEditSceneName}
+                      >
+                        <span className="text-sm">{currentScene.name}</span>
+                        <Pencil size={14} className="text-gray-500" />
+                      </div>
+                    )}
+                  </div>
 
-          <Button 
-            onClick={handleAddHotspot} 
-            className="w-full mb-3 bg-orange-500 hover:bg-orange-600"
-            size="sm"
-          >
-            <Plus size={16} className="mr-2" /> Add Hotspot
-          </Button>
+                  {/* Scene Visibility */}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-gray-400">Show Scene</Label>
+                    <Switch
+                      checked={currentScene.isVisible !== false}
+                      onCheckedChange={(checked) => toggleSceneVisibility({ stopPropagation: () => {} } as React.MouseEvent, activeScene)}
+                    />
+                  </div>
 
-          <div className="text-xs text-gray-500 mb-2">{hotspots.length} Hotspot{hotspots.length !== 1 ? 's' : ''}</div>
+                  {/* All Hotspots Visibility */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs text-gray-400">Show All Hotspots</Label>
+                      <p className="text-xs text-gray-600">{hotspots.length} hotspot{hotspots.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    <Switch
+                      checked={allHotspotsVisible}
+                      onCheckedChange={handleToggleAllHotspots}
+                    />
+                  </div>
 
-          <div className="hotspot-list">
-            {hotspots.map((hotspot) => (
-              <div key={hotspot.id} className="hotspot-item">
-                <div className="hotspot-info">
-                  {getHotspotIcon(hotspot.type)}
-                  <span className="text-base font-normal">{getHotspotLabel(hotspot, scenes)}</span>
-                </div>
-                <div className="hotspot-actions">
-                  <button 
-                    className="hotspot-action-btn"
-                    onClick={() => handleEditHotspot(hotspot)}
+                  {/* Delete Scene */}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setDeleteSceneConfirmOpen(true)}
+                    disabled={scenes.length <= 1 || isDeletingScene}
                   >
-                    <Pencil size={18} />
-                  </button>
-                  <button 
-                    className="hotspot-action-btn text-red-500"
-                    onClick={() => {
-                      setHotspotToDelete(hotspot.id)
-                      setDeleteConfirmOpen(true)
-                    }}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                    <Trash2 size={16} className="mr-2" />
+                    {isDeletingScene ? 'Deleting...' : 'Delete Scene'}
+                  </Button>
+                  {scenes.length <= 1 && (
+                    <p className="text-xs text-gray-600 text-center">Cannot delete the only scene</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">No scene selected</p>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Hotspots Section */}
+          <AccordionItem value="hotspots" className="border-gray-700">
+            <AccordionTrigger className="text-sm text-gray-400 hover:text-white py-3">
+              Hotspots
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">{hotspots.length} Hotspot{hotspots.length !== 1 ? 's' : ''}</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="delete-all-btn text-red-500 hover:text-red-400 h-auto p-0"
+                  onClick={() => hotspots.length > 0 && setDeleteAllConfirmOpen(true)}
+                  disabled={hotspots.length === 0}
+                >
+                  Delete All
+                </Button>
               </div>
-            ))}
-          </div>
-        </div>
+
+              <Button 
+                onClick={handleAddHotspot} 
+                className="w-full bg-orange-500 hover:bg-orange-600"
+                size="sm"
+              >
+                <Plus size={16} className="mr-2" /> Add Hotspot
+              </Button>
+
+              <div className="hotspot-list">
+                {hotspots.map((hotspot) => (
+                  <div key={hotspot.id} className="hotspot-item">
+                    <div className="hotspot-info">
+                      {getHotspotIcon(hotspot.type)}
+                      <span className="text-base font-normal">{getHotspotLabel(hotspot, scenes)}</span>
+                    </div>
+                    <div className="hotspot-actions">
+                      <button 
+                        className="hotspot-action-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleToggleHotspotVisibility(hotspot.id, !(hotspot.isVisible ?? true))
+                        }}
+                        title={hotspot.isVisible !== false ? "Hide hotspot" : "Show hotspot"}
+                      >
+                        {hotspot.isVisible !== false ? <Eye size={18} /> : <EyeOff size={18} />}
+                      </button>
+                      <button 
+                        className="hotspot-action-btn"
+                        onClick={() => handleEditHotspot(hotspot)}
+                      >
+                        <Pencil size={18} />
+                      </button>
+                      <button 
+                        className="hotspot-action-btn text-red-500"
+                        onClick={() => {
+                          setHotspotToDelete(hotspot.id)
+                          setDeleteConfirmOpen(true)
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </aside>
 
       {/* Hotspot Dialog */}
@@ -318,6 +506,33 @@ export function ProjectEditor() {
               className="bg-red-500 hover:bg-red-600"
             >
               Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Scene Confirmation Dialog */}
+      <AlertDialog open={deleteSceneConfirmOpen} onOpenChange={setDeleteSceneConfirmOpen}>
+        <AlertDialogContent className="bg-[#1a1a1a] text-white border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Scene</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete "{currentScene?.name}"? This will delete the scene image file, all hotspots in this scene, and remove it from the project. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              className="bg-[#252525] border-gray-700 hover:bg-[#333]"
+              disabled={isDeletingScene}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteScene}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isDeletingScene}
+            >
+              {isDeletingScene ? 'Deleting...' : 'Delete Scene'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

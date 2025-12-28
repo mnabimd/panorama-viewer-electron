@@ -9,6 +9,7 @@ export interface BaseHotspot {
     pitch: number
   }
   tooltip?: string
+  isVisible?: boolean  // Controls visibility in viewer (default: true)
 }
 
 export interface SceneHotspot extends BaseHotspot {

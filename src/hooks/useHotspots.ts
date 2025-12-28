@@ -145,6 +145,33 @@ export function useHotspots(projectId: string | undefined, activeSceneId: string
     }
   }
 
+  const toggleAllHotspotsVisibility = async (show: boolean, onRefresh: () => Promise<void>) => {
+    if (!projectId || !activeSceneId) return
+
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('toggle-all-hotspots-visibility', {
+        projectId,
+        sceneId: activeSceneId,
+        isVisible: show
+      })
+      
+      toast({
+        title: "Success",
+        description: `All hotspots ${show ? 'shown' : 'hidden'} successfully`,
+        variant: "success",
+      })
+      await onRefresh()
+    } catch (error) {
+      console.error('Failed to toggle hotspots visibility:', error)
+      toast({
+        title: "Error",
+        description: "Failed to toggle hotspots visibility",
+        variant: "destructive",
+      })
+    }
+  }
+
   return {
     hotspots,
     setHotspots,
@@ -163,6 +190,7 @@ export function useHotspots(projectId: string | undefined, activeSceneId: string
     handleEditHotspot,
     handleSubmitHotspot,
     handleDeleteHotspot,
-    handleDeleteAllHotspots
+    handleDeleteAllHotspots,
+    toggleAllHotspotsVisibility
   }
 }

@@ -1,34 +1,17 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { 
-  ChevronLeft, 
-  Search, 
-  Plus, 
-  Play, 
-  Trash2, 
-  Pencil, 
-  ChevronRight,
-  Eye,
-  EyeOff,
-  Save,
-  X
-} from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { HotspotDialog } from "@/components/HotspotDialog"
-import { AddSceneDialog } from "@/components/AddSceneDialog"
-import { ImageGalleryPicker } from "@/components/ImageGalleryPicker"
+import { EditorLeftSidebar } from "@/components/EditorLeftSidebar"
+import { EditorRightSidebarHeader } from "@/components/EditorRightSidebarHeader"
+import { SceneSettingsPanel } from "@/components/SceneSettingsPanel"
+import { HotspotsPanel } from "@/components/HotspotsPanel"
+import { EditorDialogs } from "@/components/EditorDialogs"
 import { useProject } from "@/hooks/useProject"
 import { useHotspots } from "@/hooks/useHotspots"
 import { useScenes } from "@/hooks/useScenes"
-import { getHotspotIcon, getHotspotLabel } from "@/utils/hotspot.utils"
-import { Hotspot } from "@/types/project.types"
+import { useSceneSettings } from "@/hooks/useSceneSettings"
 import "./ProjectEditor.css"
 
 export function ProjectEditor() {
@@ -85,24 +68,43 @@ export function ProjectEditor() {
     toggleAllHotspotsVisibility
   } = useHotspots(project?.id, activeScene)
 
+  const {
+    currentScene,
+    editingSceneName,
+    tempSceneName,
+    setTempSceneName,
+    deleteSceneConfirmOpen,
+    setDeleteSceneConfirmOpen,
+    isDeletingScene,
+    allHotspotsVisible,
+    isReplaceImageOpen,
+    setIsReplaceImageOpen,
+    replaceImagePath,
+    replaceSceneId,
+    isReplacingImage,
+    deleteAllScenesConfirmOpen,
+    setDeleteAllScenesConfirmOpen,
+    handleStartEditSceneName,
+    handleSaveSceneName,
+    handleCancelEditSceneName,
+    handleDeleteScene,
+    handleToggleAllHotspots,
+    handleReplaceImage,
+    handleImageSelect,
+    handleConfirmReplaceImage,
+    handleDeleteAllScenes,
+    handleToggleFeatured
+  } = useSceneSettings({
+    project,
+    activeScene,
+    scenes,
+    renameScene,
+    deleteScene,
+    refreshProject
+  })
+
   // UI state
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
-  
-  // Scene Settings state
-  const [editingSceneName, setEditingSceneName] = useState(false)
-  const [tempSceneName, setTempSceneName] = useState("")
-  const [deleteSceneConfirmOpen, setDeleteSceneConfirmOpen] = useState(false)
-  const [allHotspotsVisible, setAllHotspotsVisible] = useState(true)
-  const [isDeletingScene, setIsDeletingScene] = useState(false)
-  
-  // Replace image state
-  const [isReplaceImageOpen, setIsReplaceImageOpen] = useState(false)
-  const [replaceImagePath, setReplaceImagePath] = useState<string | null>(null)
-  const [replaceSceneId, setReplaceSceneId] = useState<string | null>(null)
-  const [isReplacingImage, setIsReplacingImage] = useState(false)
-  
-  // Delete all scenes state
-  const [deleteAllScenesConfirmOpen, setDeleteAllScenesConfirmOpen] = useState(false)
 
   // Load hotspots when active scene changes
   useEffect(() => {
@@ -121,56 +123,27 @@ export function ProjectEditor() {
 
   const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen)
 
-  // Scene Settings handlers
-  const currentScene = scenes.find(s => s.id === activeScene)
-
-  const handleStartEditSceneName = () => {
-    if (currentScene) {
-      setTempSceneName(currentScene.name)
-      setEditingSceneName(true)
-    }
-  }
-
-  const handleSaveSceneName = async () => {
-    if (project && activeScene && tempSceneName.trim()) {
-      const success = await renameScene(project.id, activeScene, tempSceneName, refreshProject)
-      if (success) {
-        setEditingSceneName(false)
+  // Handle scene deletion with active scene update
+  const handleDeleteSceneWrapper = async () => {
+    const success = await handleDeleteScene()
+    if (success) {
+      // Select another scene after deletion
+      const remainingScenes = scenes.filter(s => s.id !== activeScene)
+      if (remainingScenes.length > 0) {
+        setActiveScene(remainingScenes[0].id)
       }
     }
   }
 
-  const handleCancelEditSceneName = () => {
-    setEditingSceneName(false)
-    setTempSceneName("")
-  }
-
-  const handleDeleteScene = async () => {
-    if (!project || !activeScene || scenes.length <= 1) return
-    
-    setIsDeletingScene(true)
-    try {
-      const success = await deleteScene(project.id, activeScene, refreshProject)
-      if (success) {
-        // Select another scene after deletion
-        const remainingScenes = scenes.filter(s => s.id !== activeScene)
-        if (remainingScenes.length > 0) {
-          setActiveScene(remainingScenes[0].id)
-        }
-        setDeleteSceneConfirmOpen(false)
-      }
-    } finally {
-      setIsDeletingScene(false)
+  // Handle delete all scenes with active scene update
+  const handleDeleteAllScenesWrapper = async () => {
+    const success = await handleDeleteAllScenes()
+    if (success && scenes.length > 0) {
+      setActiveScene(scenes[0].id)
     }
   }
 
-  const handleToggleAllHotspots = async (checked: boolean) => {
-    if (project && activeScene) {
-      setAllHotspotsVisible(checked)
-      await toggleAllHotspotsVisibility(checked, refreshProject)
-    }
-  }
-
+  // Handle hotspot visibility toggle
   const handleToggleHotspotVisibility = async (hotspotId: string, isVisible: boolean) => {
     if (project && activeScene) {
       try {
@@ -188,186 +161,36 @@ export function ProjectEditor() {
     }
   }
 
-  const handleReplaceImage = () => {
-    setReplaceImagePath(null)
-    setReplaceSceneId(null)
-    setIsReplaceImageOpen(true)
-  }
-
-  const handleImageSelect = (imagePath: string, sceneId: string | null) => {
-    setReplaceImagePath(imagePath || null)
-    setReplaceSceneId(sceneId)
-  }
-
-  const handleConfirmReplaceImage = async () => {
-    if (!project || !activeScene || !replaceImagePath) return
-
-    setIsReplacingImage(true)
-    try {
-      // @ts-ignore
-      await window.ipcRenderer.invoke('replace-scene-image', {
-        projectId: project.id,
-        sceneId: activeScene,
-        newImagePath: replaceImagePath,
-        isNewUpload: replaceSceneId === null
-      })
-      
-      await refreshProject()
-      setIsReplaceImageOpen(false)
-      setReplaceImagePath(null)
-      setReplaceSceneId(null)
-    } catch (error) {
-      console.error('Failed to replace scene image:', error)
-    } finally {
-      setIsReplacingImage(false)
-    }
-  }
-
-  const handleDeleteAllScenes = async () => {
-    if (!project || scenes.length <= 1) return
-
-    try {
-      // Delete all scenes except the first one (can't delete all scenes)
-      const scenesToDelete = scenes.slice(1)
-      
-      for (const scene of scenesToDelete) {
-        await deleteScene(project.id, scene.id, refreshProject)
-      }
-      
-      // Set the first scene as active
-      if (scenes.length > 0) {
-        setActiveScene(scenes[0].id)
-      }
-      
-      setDeleteAllScenesConfirmOpen(false)
-    } catch (error) {
-      console.error('Failed to delete all scenes:', error)
-    }
-  }
-
-  const handleToggleFeatured = async (checked: boolean) => {
-    if (!project || !activeScene) return
-
-    try {
-      // @ts-ignore
-      await window.ipcRenderer.invoke('toggle-featured-scene', {
-        projectId: project.id,
-        sceneId: activeScene,
-        isFeatured: checked
-      })
-      await refreshProject()
-    } catch (error) {
-      console.error('Failed to toggle featured scene:', error)
-    }
-  }
-
   if (isLoading || !project) {
     return <div className="flex items-center justify-center h-screen bg-[#1a1a1a] text-white">Loading...</div>
   }
 
   return (
     <div className="project-editor">
-      {/* Custom Left Sidebar */}
-      <aside className="editor-sidebar-left">
-        <div className="sidebar-header-content">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="back-btn"
-            onClick={() => navigate('/')}
-          >
-            <ChevronLeft />
-          </Button>
-          
-          <div className="project-name-container">
-            {isEditingName ? (
-              <Input
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                onBlur={renameProject}
-                onKeyDown={(e) => e.key === 'Enter' && renameProject()}
-                autoFocus
-                className="edit-name-input"
-              />
-            ) : (
-              <span 
-                className="project-name" 
-                onClick={() => setIsEditingName(true)}
-                title={projectName}
-              >
-                {projectName}
-              </span>
-            )}
-            {!isEditingName && (
-              <Pencil 
-                size={14} 
-                className="cursor-pointer text-gray-500 hover:text-white shrink-0 ml-auto"
-                onClick={() => setIsEditingName(true)} 
-              />
-            )}
-          </div>
-        </div>
-
-        <div className="p-4">
-          <div className="flex items-center gap-2 mb-4 bg-[#333] p-2 rounded-md">
-            <Search size={16} className="text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search" 
-              className="bg-transparent border-none outline-none text-sm w-full text-white"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <Button className="new-image-btn" onClick={handleNewImage}>
-            <Plus size={16} className="mr-2" /> New Image
-          </Button>
-
-          <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-xs text-gray-400">{scenes.length} scene{scenes.length !== 1 ? 's' : ''}</span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="delete-all-btn text-red-500 hover:text-red-400 h-auto p-0"
-              onClick={() => scenes.length > 1 && setDeleteAllScenesConfirmOpen(true)}
-              disabled={scenes.length <= 1}
-            >
-              Delete All
-            </Button>
-          </div>
-
-          <div className="scene-list">
-            {filteredScenes.map((scene) => (
-              <div 
-                key={scene.id} 
-                className={`scene-item ${activeScene === scene.id ? 'active' : ''}`}
-                onClick={() => setActiveScene(scene.id)}
-              >
-                <img 
-                  src={`file://${scene.imagePath}`}
-                  alt={scene.name} 
-                  className="scene-thumbnail" 
-                  style={{ opacity: scene.isVisible !== false ? 1 : 0.15 }}
-                />
-                <div className="scene-name">{scene.name}</div>
-                <button 
-                  className={`visibility-toggle ${scene.isVisible === false ? 'is-hidden' : ''}`}
-                  onClick={(e) => toggleSceneVisibility(e, scene.id)}
-                >
-                  {scene.isVisible !== false ? <Eye size={16} /> : <EyeOff size={16} />}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </aside>
+      {/* Left Sidebar */}
+      <EditorLeftSidebar
+        projectName={projectName}
+        isEditingName={isEditingName}
+        searchQuery={searchQuery}
+        scenes={scenes}
+        filteredScenes={filteredScenes}
+        activeScene={activeScene}
+        onNavigateBack={() => navigate('/')}
+        onProjectNameChange={setProjectName}
+        onStartEditName={() => setIsEditingName(true)}
+        onRenameProject={renameProject}
+        onSearchChange={setSearchQuery}
+        onNewImage={handleNewImage}
+        onSceneSelect={setActiveScene}
+        onToggleSceneVisibility={toggleSceneVisibility}
+        onDeleteAllScenes={() => setDeleteAllScenesConfirmOpen(true)}
+      />
 
       {/* Center Content */}
       <main className="editor-main">
         <div className="text-gray-500">360° Viewer Placeholder</div>
         
-        {/* Right Sidebar Toggle Button - Outside sidebar so it's always visible */}
+        {/* Right Sidebar Toggle Button */}
         <Button 
           variant="ghost" 
           size="icon"
@@ -380,14 +203,7 @@ export function ProjectEditor() {
 
       {/* Right Sidebar */}
       <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
-        <div className="right-sidebar-header">
-          <Button variant="ghost" size="icon">
-            <Play size={18} /> 
-          </Button>
-          <Button className="publish-btn" size="sm">
-            Publish
-          </Button>
-        </div>
+        <EditorRightSidebarHeader />
 
         <Accordion type="multiple" defaultValue={["scene-settings", "hotspots"]} className="px-4">
           {/* Scene Settings Section */}
@@ -396,126 +212,25 @@ export function ProjectEditor() {
               Scene Settings
             </AccordionTrigger>
             <AccordionContent className="space-y-4 pt-2">
-              {currentScene ? (
-                <>
-                  {/* Scene Name */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-gray-400">Scene Name</Label>
-                    {editingSceneName ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={tempSceneName}
-                          onChange={(e) => setTempSceneName(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveSceneName()}
-                          className="bg-[#252525] border-gray-700 text-white text-sm"
-                          autoFocus
-                        />
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          onClick={handleSaveSceneName}
-                          className="shrink-0"
-                        >
-                          <Save size={16} />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          onClick={handleCancelEditSceneName}
-                          className="shrink-0"
-                        >
-                          <X size={16} />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div 
-                        className="flex items-center justify-between p-2 bg-[#252525] rounded-md cursor-pointer hover:bg-[#2a2a2a]"
-                        onClick={handleStartEditSceneName}
-                      >
-                        <span className="text-sm">{currentScene.name}</span>
-                        <Pencil size={14} className="text-gray-500" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Scene Visibility */}
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-gray-400">Show Scene</Label>
-                    <Switch
-                      checked={currentScene.isVisible !== false}
-                      onCheckedChange={(checked) => toggleSceneVisibility({ stopPropagation: () => {} } as React.MouseEvent, activeScene)}
-                    />
-                  </div>
-
-                  {/* Featured Scene */}
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-xs text-gray-400">Featured Scene</Label>
-                      <p className="text-xs text-gray-600">Mark as main/indexed scene</p>
-                    </div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div>
-                            <Switch
-                              checked={currentScene.isFeatured === true}
-                              onCheckedChange={handleToggleFeatured}
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="bg-[#333] text-white border-gray-600">
-                          <p className="max-w-xs">
-                            When enabled, this scene will be set as the main entry point for your project.
-                            Only one scene can be featured at a time.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-
-                  {/* All Hotspots Visibility */}
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-xs text-gray-400">Show All Hotspots</Label>
-                      <p className="text-xs text-gray-600">{hotspots.length} hotspot{hotspots.length !== 1 ? 's' : ''}</p>
-                    </div>
-                    <Switch
-                      checked={allHotspotsVisible}
-                      onCheckedChange={handleToggleAllHotspots}
-                    />
-                  </div>
-
-                  {/* Replace Scene Image */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-gray-400">Replace Scene Image</Label>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full border-gray-700 hover:bg-gray-800"
-                      onClick={handleReplaceImage}
-                    >
-                      Choose New Image
-                    </Button>
-                  </div>
-
-                  {/* Delete Scene */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setDeleteSceneConfirmOpen(true)}
-                    disabled={scenes.length <= 1 || isDeletingScene}
-                  >
-                    <Trash2 size={16} className="mr-2" />
-                    {isDeletingScene ? 'Deleting...' : 'Delete Scene'}
-                  </Button>
-                  {scenes.length <= 1 && (
-                    <p className="text-xs text-gray-600 text-center">Cannot delete the only scene</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-gray-500">No scene selected</p>
-              )}
+              <SceneSettingsPanel
+                currentScene={currentScene}
+                scenes={scenes}
+                activeScene={activeScene}
+                allHotspotsVisible={allHotspotsVisible}
+                hotspots={hotspots}
+                editingSceneName={editingSceneName}
+                tempSceneName={tempSceneName}
+                isDeletingScene={isDeletingScene}
+                onTempSceneNameChange={setTempSceneName}
+                onStartEditSceneName={handleStartEditSceneName}
+                onSaveSceneName={handleSaveSceneName}
+                onCancelEditSceneName={handleCancelEditSceneName}
+                onToggleSceneVisibility={toggleSceneVisibility}
+                onToggleFeatured={handleToggleFeatured}
+                onToggleAllHotspots={handleToggleAllHotspots}
+                onReplaceImage={handleReplaceImage}
+                onDeleteScene={() => setDeleteSceneConfirmOpen(true)}
+              />
             </AccordionContent>
           </AccordionItem>
 
@@ -525,219 +240,56 @@ export function ProjectEditor() {
               Hotspots
             </AccordionTrigger>
             <AccordionContent className="space-y-3 pt-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">{hotspots.length} Hotspot{hotspots.length !== 1 ? 's' : ''}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="delete-all-btn text-red-500 hover:text-red-400 h-auto p-0"
-                  onClick={() => hotspots.length > 0 && setDeleteAllConfirmOpen(true)}
-                  disabled={hotspots.length === 0}
-                >
-                  Delete All
-                </Button>
-              </div>
-
-              <Button 
-                onClick={handleAddHotspot} 
-                className="w-full bg-orange-500 hover:bg-orange-600"
-                size="sm"
-              >
-                <Plus size={16} className="mr-2" /> Add Hotspot
-              </Button>
-
-              <div className="hotspot-list">
-                {hotspots.map((hotspot) => (
-                  <div key={hotspot.id} className="hotspot-item">
-                    <div className="hotspot-info">
-                      {getHotspotIcon(hotspot.type)}
-                      <span className="text-base font-normal">{getHotspotLabel(hotspot, scenes)}</span>
-                    </div>
-                    <div className="hotspot-actions">
-                      <button 
-                        className="hotspot-action-btn"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleToggleHotspotVisibility(hotspot.id, !(hotspot.isVisible ?? true))
-                        }}
-                        title={hotspot.isVisible !== false ? "Hide hotspot" : "Show hotspot"}
-                      >
-                        {hotspot.isVisible !== false ? <Eye size={18} /> : <EyeOff size={18} />}
-                      </button>
-                      <button 
-                        className="hotspot-action-btn"
-                        onClick={() => handleEditHotspot(hotspot)}
-                      >
-                        <Pencil size={18} />
-                      </button>
-                      <button 
-                        className="hotspot-action-btn text-red-500"
-                        onClick={() => {
-                          setHotspotToDelete(hotspot.id)
-                          setDeleteConfirmOpen(true)
-                        }}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <HotspotsPanel
+                hotspots={hotspots}
+                scenes={scenes}
+                onAddHotspot={handleAddHotspot}
+                onEditHotspot={handleEditHotspot}
+                onToggleHotspotVisibility={handleToggleHotspotVisibility}
+                onDeleteHotspot={(hotspotId) => {
+                  setHotspotToDelete(hotspotId)
+                  setDeleteConfirmOpen(true)
+                }}
+                onDeleteAllHotspots={() => setDeleteAllConfirmOpen(true)}
+              />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
       </aside>
 
-      {/* Hotspot Dialog */}
-      <HotspotDialog
-        open={isHotspotDialogOpen}
-        onOpenChange={setIsHotspotDialogOpen}
-        mode={editingHotspot ? 'edit' : 'add'}
-        existingHotspot={editingHotspot || undefined}
-        availableScenes={scenes}
-        onSubmit={(data) => handleSubmitHotspot(data, refreshProject)}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent className="bg-[#1a1a1a] text-white border-gray-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Hotspot</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              Are you sure you want to delete this hotspot? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-[#252525] border-gray-700 hover:bg-[#333]">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => handleDeleteHotspot(refreshProject)}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete All Confirmation Dialog */}
-      <AlertDialog open={deleteAllConfirmOpen} onOpenChange={setDeleteAllConfirmOpen}>
-        <AlertDialogContent className="bg-[#1a1a1a] text-white border-gray-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete All Hotspots</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              Are you sure you want to delete all {hotspots.length} hotspot{hotspots.length !== 1 ? 's' : ''} from this scene? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-[#252525] border-gray-700 hover:bg-[#333]">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => handleDeleteAllHotspots(refreshProject)}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Delete All
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Scene Confirmation Dialog */}
-      <AlertDialog open={deleteSceneConfirmOpen} onOpenChange={setDeleteSceneConfirmOpen}>
-        <AlertDialogContent className="bg-[#1a1a1a] text-white border-gray-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Scene</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              Are you sure you want to delete "{currentScene?.name}"? This will delete the scene image file, all hotspots in this scene, and remove it from the project. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel 
-              className="bg-[#252525] border-gray-700 hover:bg-[#333]"
-              disabled={isDeletingScene}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteScene}
-              className="bg-red-500 hover:bg-red-600"
-              disabled={isDeletingScene}
-            >
-              {isDeletingScene ? 'Deleting...' : 'Delete Scene'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete All Scenes Confirmation Dialog */}
-      <AlertDialog open={deleteAllScenesConfirmOpen} onOpenChange={setDeleteAllScenesConfirmOpen}>
-        <AlertDialogContent className="bg-[#1a1a1a] text-white border-gray-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete All Scenes</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              Are you sure you want to delete all {scenes.length - 1} scene{scenes.length - 1 !== 1 ? 's' : ''}? The first scene will be kept as at least one scene is required. This will also delete all hotspots in these scenes. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-[#252525] border-gray-700 hover:bg-[#333]">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteAllScenes}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Delete All
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Replace Scene Image Dialog */}
-      <Dialog open={isReplaceImageOpen} onOpenChange={setIsReplaceImageOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-[#1a1a1a] text-white border-gray-700 max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Replace Scene Image</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div>
-              <Label className="text-sm text-gray-400 mb-2 block">Select New Image</Label>
-              <ImageGalleryPicker
-                existingScenes={scenes.filter(s => s.id !== activeScene)}
-                selectedImagePath={replaceImagePath}
-                selectedSceneId={replaceSceneId}
-                onImageSelect={handleImageSelect}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setIsReplaceImageOpen(false)}
-              disabled={isReplacingImage}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmReplaceImage}
-              disabled={isReplacingImage || !replaceImagePath}
-              className="bg-orange-500 hover:bg-orange-600"
-            >
-              {isReplacingImage ? 'Replacing...' : 'Replace Image'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Scene Dialog */}
-      <AddSceneDialog
-        open={isAddSceneDialogOpen}
-        onOpenChange={setIsAddSceneDialogOpen}
+      {/* All Dialogs */}
+      <EditorDialogs
+        isHotspotDialogOpen={isHotspotDialogOpen}
+        setIsHotspotDialogOpen={setIsHotspotDialogOpen}
+        editingHotspot={editingHotspot}
+        scenes={scenes}
+        onSubmitHotspot={(data) => handleSubmitHotspot(data, refreshProject)}
+        deleteConfirmOpen={deleteConfirmOpen}
+        setDeleteConfirmOpen={setDeleteConfirmOpen}
+        onDeleteHotspot={() => handleDeleteHotspot(refreshProject)}
+        deleteAllConfirmOpen={deleteAllConfirmOpen}
+        setDeleteAllConfirmOpen={setDeleteAllConfirmOpen}
+        hotspots={hotspots}
+        onDeleteAllHotspots={() => handleDeleteAllHotspots(refreshProject)}
+        deleteSceneConfirmOpen={deleteSceneConfirmOpen}
+        setDeleteSceneConfirmOpen={setDeleteSceneConfirmOpen}
+        currentScene={currentScene}
+        isDeletingScene={isDeletingScene}
+        onDeleteScene={handleDeleteSceneWrapper}
+        deleteAllScenesConfirmOpen={deleteAllScenesConfirmOpen}
+        setDeleteAllScenesConfirmOpen={setDeleteAllScenesConfirmOpen}
+        onDeleteAllScenes={handleDeleteAllScenesWrapper}
+        isReplaceImageOpen={isReplaceImageOpen}
+        setIsReplaceImageOpen={setIsReplaceImageOpen}
+        replaceImagePath={replaceImagePath}
+        replaceSceneId={replaceSceneId}
+        isReplacingImage={isReplacingImage}
+        activeScene={activeScene}
+        onImageSelect={handleImageSelect}
+        onConfirmReplaceImage={handleConfirmReplaceImage}
+        isAddSceneDialogOpen={isAddSceneDialogOpen}
+        setIsAddSceneDialogOpen={setIsAddSceneDialogOpen}
         projectId={project.id}
-        existingScenes={scenes}
         onSceneAdded={() => handleSceneAdded(refreshProject)}
       />
     </div>

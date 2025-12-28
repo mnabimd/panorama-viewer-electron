@@ -16,6 +16,20 @@ interface PanoramaViewerProps {
   onSceneHotspotClick: (targetSceneId: string) => void
 }
 
+const logMessage = async (level: 'INFO' | 'ERROR' | 'WARN', message: string) => {
+  try {
+    // @ts-ignore
+    await window.ipcRenderer.invoke('log-message', {
+      level,
+      context: 'PanoramaViewer',
+      file: 'src/components/PanoramaViewer.tsx',
+      message
+    })
+  } catch (e) {
+    console.error('Failed to log message:', e)
+  }
+}
+
 export function PanoramaViewer({
   scene,
   hotspots,
@@ -37,6 +51,8 @@ export function PanoramaViewer({
     try {
       setIsLoading(true)
       setError(null)
+
+      logMessage('INFO', `Initializing viewer for scene: ${scene.id} (${scene.imagePath})`)
 
       // Create viewer instance
       const viewer = new Viewer({
@@ -68,6 +84,7 @@ export function PanoramaViewer({
 
       // Handle ready event
       viewer.addEventListener('ready', () => {
+        logMessage('INFO', 'Viewer ready')
         setIsLoading(false)
       })
 
@@ -98,6 +115,8 @@ export function PanoramaViewer({
       }
 
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      logMessage('ERROR', `Failed to initialize panorama viewer: ${errorMessage}`)
       console.error('Failed to initialize panorama viewer:', err)
       setError('Failed to initialize viewer')
       setIsLoading(false)
@@ -125,6 +144,8 @@ export function PanoramaViewer({
       const markers = hotspots.map(convertHotspotToMarker)
       markersPluginRef.current.setMarkers(markers)
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      logMessage('ERROR', `Failed to update markers: ${errorMessage}`)
       console.error('Failed to update markers:', err)
     }
   }, [hotspots])

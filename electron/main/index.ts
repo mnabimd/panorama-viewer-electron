@@ -5,6 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { update } from './update'
 import { setupProjectHandlers } from './project-manager'
+import { setupLogger } from './logger'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -39,6 +40,13 @@ if (!app.requestSingleInstanceLock()) {
   app.quit()
   process.exit(0)
 }
+
+// Enable WebGL and GPU features
+app.commandLine.appendSwitch('ignore-gpu-blacklist')
+app.commandLine.appendSwitch('enable-gpu-rasterization')
+app.commandLine.appendSwitch('enable-zero-copy')
+// Allow software WebGL fallback if hardware fails (fixes the warning)
+app.commandLine.appendSwitch('enable-unsafe-swiftshader')
 
 let win: BrowserWindow | null = null
 const preload = path.join(__dirname, '../preload/index.mjs')
@@ -98,6 +106,9 @@ async function createWindow() {
 
   // Setup project handlers
   setupProjectHandlers()
+  
+  // Setup logger
+  setupLogger()
 }
 
 app.whenReady().then(createWindow)

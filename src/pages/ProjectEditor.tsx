@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { HotspotDialog } from "@/components/HotspotDialog"
 import { AddSceneDialog } from "@/components/AddSceneDialog"
 import { ImageGalleryPicker } from "@/components/ImageGalleryPicker"
@@ -452,10 +453,24 @@ export function ProjectEditor() {
                       <Label className="text-xs text-gray-400">Featured Scene</Label>
                       <p className="text-xs text-gray-600">Mark as main/indexed scene</p>
                     </div>
-                    <Switch
-                      checked={currentScene.isFeatured === true}
-                      onCheckedChange={handleToggleFeatured}
-                    />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <Switch
+                              checked={currentScene.isFeatured === true}
+                              onCheckedChange={handleToggleFeatured}
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="bg-[#333] text-white border-gray-600">
+                          <p className="max-w-xs">
+                            When enabled, this scene will be set as the main entry point for your project.
+                            Only one scene can be featured at a time.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
 
                   {/* All Hotspots Visibility */}

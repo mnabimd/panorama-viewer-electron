@@ -21,7 +21,9 @@
     "build:win": "npm run build -- --win"
   },
   "dependencies": {
+    "@photo-sphere-viewer/compass-plugin": "^5.14.0",
     "@photo-sphere-viewer/core": "^5.14.0",
+    "@photo-sphere-viewer/map-plugin": "^5.14.0",
     "@photo-sphere-viewer/markers-plugin": "^5.14.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",

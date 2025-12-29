@@ -1,11 +1,13 @@
 import { useEffect, useRef, useMemo, memo } from 'react'
 import { Viewer } from '@photo-sphere-viewer/core'
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin'
+import { CompassPlugin } from '@photo-sphere-viewer/compass-plugin'
 import { Scene, Hotspot } from '@/types/project.types'
 import { convertHotspotToMarker } from '@/utils/panorama.utils'
 import { PanoramaPickingOverlay } from './PanoramaPickingOverlay'
 import '@photo-sphere-viewer/core/index.css'
 import '@photo-sphere-viewer/markers-plugin/index.css'
+import '@photo-sphere-viewer/compass-plugin/index.css'
 import './PanoramaViewer.css'
 
 interface PanoramaViewerProps {
@@ -32,6 +34,45 @@ const logMessage = async (level: 'INFO' | 'ERROR' | 'WARN', message: string) => 
   }
 }
 
+// Custom compass SVG with NEWS cardinal directions
+const compassBackgroundSvg = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="48" fill="rgba(0, 0, 0, 0.3)" stroke="rgba(255, 255, 255, 0.4)" stroke-width="1"/>
+    
+    <!-- Degree markings -->
+    <g stroke="rgba(255, 255, 255, 0.3)" stroke-width="0.5">
+      ${Array.from({ length: 36 }, (_, i) => {
+        const angle = i * 10 - 90;
+        const isCardinal = i % 9 === 0;
+        const length = isCardinal ? 8 : 4;
+        const x1 = 50 + 40 * Math.cos(angle * Math.PI / 180);
+        const y1 = 50 + 40 * Math.sin(angle * Math.PI / 180);
+        const x2 = 50 + (40 - length) * Math.cos(angle * Math.PI / 180);
+        const y2 = 50 + (40 - length) * Math.sin(angle * Math.PI / 180);
+        return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${isCardinal ? 1 : 0.5}"/>`;
+      }).join('')}
+    </g>
+    
+    <!-- Cardinal direction labels -->
+    <text x="50" y="18" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">N</text>
+    <text x="82" y="54" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">E</text>
+    <text x="50" y="86" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">S</text>
+    <text x="18" y="54" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">W</text>
+    
+    <!-- Center dot -->
+    <circle cx="50" cy="50" r="2" fill="rgba(255, 255, 255, 0.6)"/>
+  </svg>
+`
+
+// Convert hotspots to compass hotspots format
+const convertHotspotsToCompassHotspots = (hotspots: Hotspot[]) => {
+  return hotspots.map(hotspot => ({
+    yaw: hotspot.position.yaw,
+    pitch: hotspot.position.pitch,
+    color: '#ff0000', // Red dots for hotspots
+  }))
+}
+
 // Memoize the component to prevent unnecessary re-renders
 export const PanoramaViewer = memo(function PanoramaViewer({
   scene,
@@ -45,6 +86,7 @@ export const PanoramaViewer = memo(function PanoramaViewer({
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Viewer | null>(null)
   const markersPluginRef = useRef<MarkersPlugin | null>(null)
+  const compassPluginRef = useRef<CompassPlugin | null>(null)
   const isAddingHotspotRef = useRef(isAddingHotspot)
   const onPanoramaClickRef = useRef(onPanoramaClick)
 
@@ -69,6 +111,11 @@ export const PanoramaViewer = memo(function PanoramaViewer({
     return hotspots.map(convertHotspotToMarker)
   }, [hotspots])
 
+  // Memoize compass hotspots configuration
+  const compassHotspots = useMemo(() => {
+    return convertHotspotsToCompassHotspots(hotspots)
+  }, [hotspots])
+
   // Initialize viewer on mount
   useEffect(() => {
     if (!containerRef.current) return
@@ -85,6 +132,15 @@ export const PanoramaViewer = memo(function PanoramaViewer({
         plugins: [
           [MarkersPlugin, {
             markers: markers,
+          }] as any,
+          [CompassPlugin, {
+            size: '120px',
+            position: 'top-right',
+            backgroundSvg: compassBackgroundSvg,
+            coneColor: 'rgba(255, 255, 255, 0.5)',
+            navigation: true,
+            hotspots: compassHotspots,
+            hotspotColor: '#ff0000', // Red color for hotspots
           }] as any,
         ],
         mousewheel: true,
@@ -112,6 +168,12 @@ export const PanoramaViewer = memo(function PanoramaViewer({
         })
       }
 
+      // Get compass plugin instance
+      const compassPlugin = viewer.getPlugin(CompassPlugin) as CompassPlugin | undefined
+      if (compassPlugin) {
+        compassPluginRef.current = compassPlugin
+      }
+
       // Handle panorama clicks for adding hotspots
       // Note: Click must be quick - dragging will pan the panorama instead
       viewer.addEventListener('click', (e: any) => {
@@ -137,6 +199,7 @@ export const PanoramaViewer = memo(function PanoramaViewer({
         viewerRef.current.destroy()
         viewerRef.current = null
         markersPluginRef.current = null
+        compassPluginRef.current = null
       }
     }
   }, []) // Only run on mount/unmount
@@ -168,6 +231,19 @@ export const PanoramaViewer = memo(function PanoramaViewer({
       console.error('Failed to update markers:', err)
     }
   }, [markers])
+
+  // Update compass hotspots when hotspots change
+  useEffect(() => {
+    if (!compassPluginRef.current) return
+
+    try {
+      compassPluginRef.current.setHotspots(compassHotspots)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      logMessage('ERROR', `Failed to update compass hotspots: ${errorMessage}`)
+      console.error('Failed to update compass hotspots:', err)
+    }
+  }, [compassHotspots])
 
   // Update ref and cursor style based on adding mode
   useEffect(() => {

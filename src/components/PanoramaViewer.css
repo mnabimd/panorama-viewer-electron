@@ -119,3 +119,103 @@
 .custom-marker.pulse {
   animation: marker-pulse 2s ease-in-out infinite;
 }
+
+/* Compass Plugin Styling */
+.psv-compass {
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(8px);
+  border-radius: 50% !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s ease;
+}
+
+.psv-compass:hover {
+  background: rgba(0, 0, 0, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+  transform: scale(1.05);
+}
+
+/* Compass cone (viewing direction indicator) */
+.psv-compass-cone {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.psv-compass:hover .psv-compass-cone {
+  opacity: 0.9;
+}
+
+/* Minimap Plugin Styling */
+.psv-map {
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(8px);
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s ease;
+  transform: translateX(-50%); /* Center horizontally */
+}
+
+.psv-map:hover {
+  background: rgba(0, 0, 0, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Minimap container */
+.psv-map__container {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Minimap image */
+.psv-map__image {
+  opacity: 0.9;
+}
+
+/* Minimap hotspot dots */
+.psv-map__spot {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.psv-map__spot:hover {
+  transform: scale(1.4);
+  filter: drop-shadow(0 0 4px rgba(255, 0, 0, 0.8));
+}
+
+/* Minimap viewing cone */
+.psv-map__cone {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.psv-map:hover .psv-map__cone {
+  opacity: 0.8;
+}
+
+/* Minimap buttons */
+.psv-map__button {
+  background: rgba(0, 0, 0, 0.5) !important;
+  color: white !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease;
+}
+
+.psv-map__button:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1);
+}
+
+/* Minimap title */
+.psv-map__title {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px);
+  color: white !important;
+  font-weight: 500;
+  padding: 8px 12px !important;
+  border-radius: 6px 6px 0 0 !important;
+}
+

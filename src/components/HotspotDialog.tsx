@@ -254,20 +254,6 @@ export function HotspotDialog({
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="transition">Transition Effect</Label>
-                <Select value={transition} onValueChange={(value) => setTransition(value as 'fade' | 'slide' | 'none')}>
-                  <SelectTrigger className="bg-[#252525] border-gray-700">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#252525] border-gray-700">
-                    <SelectItem value="fade">Fade</SelectItem>
-                    <SelectItem value="slide">Slide</SelectItem>
-                    <SelectItem value="none">None</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </>
           )}
 

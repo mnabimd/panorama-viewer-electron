@@ -17,7 +17,6 @@ interface CreateProjectParams {
   name: string
   description?: string
   category?: string
-  coverImagePath?: string
 }
 
 // Hotspot types
@@ -93,20 +92,11 @@ export function setupProjectHandlers() {
 
       // 1. Create directory structure
       await fs.mkdir(projectPath, { recursive: true })
-      await fs.mkdir(path.join(projectPath, 'thumbnails'), { recursive: true })
       await fs.mkdir(path.join(projectPath, 'scenes'), { recursive: true })
       await fs.mkdir(path.join(projectPath, 'ui'), { recursive: true })
       await fs.mkdir(path.join(projectPath, 'build'), { recursive: true })
 
-      // 2. Handle cover image if provided
-      // Note: In a real app, we might want to resize/optimize this
-      if (params.coverImagePath) {
-        const ext = path.extname(params.coverImagePath)
-        const destPath = path.join(projectPath, 'thumbnails', `cover${ext}`)
-        await fs.copyFile(params.coverImagePath, destPath)
-      }
-
-      // 3. Create project.json
+      // 2. Create project.json
       const projectMetadata: ProjectMetadata = {
         id: projectId,
         name: params.name,
@@ -164,9 +154,7 @@ export function setupProjectHandlers() {
             const metadata = JSON.parse(projectJsonContent)
             return {
               ...metadata,
-              path: path.join(PROJECTS_DIR, dir.name),
-              // Add cover image path if it exists
-              cover: path.join(PROJECTS_DIR, dir.name, 'thumbnails', 'cover.jpg') // Simplified assumption, might need check
+              path: path.join(PROJECTS_DIR, dir.name)
             }
           } catch (e) {
             console.warn(`Failed to read project in ${dir.name}:`, e)
@@ -203,8 +191,7 @@ export function setupProjectHandlers() {
         const metadata = JSON.parse(projectJsonContent)
         return {
           ...metadata,
-          path: projectPath,
-          cover: path.join(projectPath, 'thumbnails', 'cover.jpg')
+          path: projectPath
         }
       } catch (e) {
         console.warn(`Failed to read project ${projectId}:`, e)
@@ -452,7 +439,8 @@ export function setupProjectHandlers() {
         name: sceneName,
         imagePath: finalImagePath,
         hotspots: [],
-        isVisible: true
+        isVisible: true,
+        isFeatured: metadata.scenes.length === 0 // Mark first scene as featured
       }
       
       // Add scene to project
@@ -461,23 +449,6 @@ export function setupProjectHandlers() {
       }
       metadata.scenes.push(newScene)
       metadata.updatedAt = new Date().toISOString()
-      
-      // If this is the first scene, set it as the cover photo
-      if (metadata.scenes.length === 1) {
-        const thumbnailsDir = path.join(projectPath, 'thumbnails')
-        
-        // Ensure thumbnails directory exists
-        try {
-          await fs.access(thumbnailsDir)
-        } catch {
-          await fs.mkdir(thumbnailsDir, { recursive: true })
-        }
-        
-        // Copy the image as cover.jpg
-        const coverPath = path.join(thumbnailsDir, 'cover.jpg')
-        const sourceImagePath = isNewUpload ? finalImagePath : imagePath
-        await fs.copyFile(sourceImagePath, coverPath)
-      }
       
       await fs.writeFile(
         projectJsonPath,
@@ -553,10 +524,16 @@ export function setupProjectHandlers() {
       
       // Get the scene's image path before removing it
       const sceneImagePath = metadata.scenes[sceneIndex].imagePath
+      const wasFeatured = metadata.scenes[sceneIndex].isFeatured
       
       // Remove scene from array
       metadata.scenes.splice(sceneIndex, 1)
       metadata.updatedAt = new Date().toISOString()
+      
+      // If the deleted scene was featured, make the first remaining scene featured
+      if (wasFeatured && metadata.scenes.length > 0) {
+        metadata.scenes[0].isFeatured = true
+      }
       
       // Save updated metadata
       await fs.writeFile(

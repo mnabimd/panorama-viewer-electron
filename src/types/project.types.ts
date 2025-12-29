@@ -61,5 +61,4 @@ export interface Project {
     initialFov: number
   }
   path?: string
-  cover?: string
 }

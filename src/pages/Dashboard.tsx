@@ -30,7 +30,6 @@ interface Project {
   description: string
   scenes: Record<string, any>
   updatedAt: string
-  cover?: string
   path: string
   category?: string
 }
@@ -158,14 +157,26 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
                     onClick={() => navigate(`/project/${project.id}`)}
                   >
                     <div className="card-thumbnail">
-                      {project.cover ? (
-                        <img src={`file://${project.cover}`} alt={project.name} />
-                      ) : (
+                      {Object.keys(project.scenes || {}).length === 0 ? (
                         <div className="thumbnail-placeholder">
                           <ImageIcon size={32} />
-                          <span>No Preview</span>
+                          <span>Add your first scene</span>
                         </div>
-                      )}
+                      ) : (() => {
+                        // Find the featured scene
+                        const scenes = Object.values(project.scenes || {})
+                        const featuredScene = scenes.find((s: any) => s.isFeatured === true)
+                        const displayScene = featuredScene || scenes[0]
+                        
+                        return displayScene?.imagePath ? (
+                          <img src={`file://${displayScene.imagePath}`} alt={project.name} />
+                        ) : (
+                          <div className="thumbnail-placeholder">
+                            <ImageIcon size={32} />
+                            <span>No Preview</span>
+                          </div>
+                        )
+                      })()}
                     </div>
                     <div className="card-content">
                       <div className="card-tags">

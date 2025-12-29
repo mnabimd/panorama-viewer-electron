@@ -1,5 +1,6 @@
 import type { ProgressInfo } from 'electron-updater'
 import { useCallback, useEffect, useState } from 'react'
+import { Download, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react'
 import Modal from '@/components/update/Modal'
 import Progress from '@/components/update/Progress'
 import './update.css'
@@ -91,35 +92,62 @@ const Update = () => {
     <>
       <Modal
         open={modalOpen}
+        title={
+          updateError 
+            ? 'Update Error' 
+            : updateAvailable 
+              ? 'Update Available' 
+              : 'Check for Updates'
+        }
         cancelText={modalBtn?.cancelText}
         okText={modalBtn?.okText}
         onCancel={modalBtn?.onCancel}
         onOk={modalBtn?.onOk}
-        footer={updateAvailable ? /* hide footer */null : undefined}
+        footer={updateAvailable ? /* hide footer during download */null : undefined}
       >
         <div className='modal-slot'>
-          {updateError
-            ? (
-              <div>
-                <p>Error downloading the latest version.</p>
-                <p>{updateError.message}</p>
+          {updateError ? (
+            <div className='error-message'>
+              <div className='error-title'>
+                <AlertCircle size={18} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                Error downloading the latest version
               </div>
-            ) : updateAvailable
-              ? (
-                <div>
-                  <div>The last version is: v{versionInfo?.newVersion}</div>
-                  <div className='new-version__target'>v{versionInfo?.version} -&gt; v{versionInfo?.newVersion}</div>
-                  <div className='update__progress'>
-                    <div className='progress__title'>Update progress:</div>
-                    <div className='progress__bar'>
-                      <Progress percent={progressInfo?.percent} ></Progress>
-                    </div>
-                  </div>
+              <p>{updateError.message}</p>
+            </div>
+          ) : updateAvailable ? (
+            <div className='update-info'>
+              <div className='version-display'>
+                <Download size={20} style={{ display: 'inline', marginRight: '0.5rem', color: '#f97316' }} />
+                New version available: <span className='version-highlight'>v{versionInfo?.newVersion}</span>
+              </div>
+              
+              <div className='version-transition'>
+                v{versionInfo?.version} <ArrowRight size={16} /> v{versionInfo?.newVersion}
+              </div>
+              
+              <div className='update-progress-section'>
+                <span className='progress-label'>Download progress:</span>
+                <Progress percent={progressInfo?.percent} />
+              </div>
+              
+              {progressInfo?.percent === 100 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', marginTop: '1rem' }}>
+                  <CheckCircle size={18} />
+                  <span>Download complete! Ready to install.</span>
                 </div>
-              )
-              : (
-                <div className='can-not-available'>{JSON.stringify(versionInfo ?? {}, null, 2)}</div>
               )}
+            </div>
+          ) : (
+            <div className='no-update-message'>
+              <div className='no-update-title'>
+                <CheckCircle size={20} style={{ display: 'inline', marginRight: '0.5rem', color: '#10b981' }} />
+                You're up to date!
+              </div>
+              <p>
+                Current version: <span className='current-version'>v{versionInfo?.version || '1.0.0'}</span>
+              </p>
+            </div>
+          )}
         </div>
       </Modal>
       <button disabled={checking} onClick={checkUpdate}>
@@ -130,3 +158,4 @@ const Update = () => {
 }
 
 export default Update
+

@@ -1,22 +1,23 @@
 import React from 'react'
 import './progress.css'
 
-const Progress: React.FC<React.PropsWithChildren<{
+interface ProgressProps {
   percent?: number
-}>> = props => {
-  const { percent = 0 } = props
+}
 
+const Progress: React.FC<ProgressProps> = ({ percent = 0 }) => {
   return (
     <div className='update-progress'>
-      <div className='update-progress-pr'>
+      <div className='update-progress-bar'>
         <div
-          className='update-progress-rate'
-          style={{ width: `${3 * percent}px` }}
+          className='update-progress-fill'
+          style={{ width: `${percent}%` }}
         />
       </div>
-      <span className='update-progress-num'>{(percent ?? 0).toString().substring(0, 4)}%</span>
+      <span className='update-progress-text'>{Math.round(percent)}%</span>
     </div>
   )
 }
 
 export default Progress
+

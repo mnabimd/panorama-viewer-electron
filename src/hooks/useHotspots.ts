@@ -30,9 +30,9 @@ export function useHotspots(projectId: string | undefined, activeSceneId: string
     }
   }
 
-  const handleAddHotspot = () => {
+  const handleAddHotspot = (onEnablePickingMode: () => void) => {
     setEditingHotspot(null)
-    setIsHotspotDialogOpen(true)
+    onEnablePickingMode() // Enable picking mode instead of opening dialog
   }
 
   const handleEditHotspot = (hotspot: Hotspot) => {

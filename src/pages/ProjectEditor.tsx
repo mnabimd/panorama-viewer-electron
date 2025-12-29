@@ -224,6 +224,7 @@ export function ProjectEditor() {
             onHotspotClick={handleHotspotClickInViewer}
             onPanoramaClick={handlePanoramaClick}
             onSceneHotspotClick={handleSceneHotspotClick}
+            onCancelPicking={() => setIsAddingHotspot(false)}
           />
         )}
         
@@ -240,10 +241,7 @@ export function ProjectEditor() {
 
       {/* Right Sidebar */}
       <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
-        <EditorRightSidebarHeader 
-          isAddingHotspot={isAddingHotspot}
-          onToggleAddHotspot={() => setIsAddingHotspot(!isAddingHotspot)}
-        />
+        <EditorRightSidebarHeader />
 
         <Accordion type="multiple" defaultValue={["scene-settings", "hotspots"]} className="px-4">
           {/* Scene Settings Section */}
@@ -283,7 +281,7 @@ export function ProjectEditor() {
               <HotspotsPanel
                 hotspots={hotspots}
                 scenes={scenes}
-                onAddHotspot={handleAddHotspot}
+                onAddHotspot={() => handleAddHotspot(() => setIsAddingHotspot(true))}
                 onEditHotspot={handleEditHotspot}
                 onToggleHotspotVisibility={handleToggleHotspotVisibility}
                 onDeleteHotspot={(hotspotId) => {

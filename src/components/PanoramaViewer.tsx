@@ -3,6 +3,7 @@ import { Viewer } from '@photo-sphere-viewer/core'
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin'
 import { Scene, Hotspot } from '@/types/project.types'
 import { convertHotspotToMarker } from '@/utils/panorama.utils'
+import { PanoramaPickingOverlay } from './PanoramaPickingOverlay'
 import '@photo-sphere-viewer/core/index.css'
 import '@photo-sphere-viewer/markers-plugin/index.css'
 import './PanoramaViewer.css'
@@ -14,6 +15,7 @@ interface PanoramaViewerProps {
   onHotspotClick: (hotspot: Hotspot) => void
   onPanoramaClick: (position: { yaw: number; pitch: number }) => void
   onSceneHotspotClick: (targetSceneId: string) => void
+  onCancelPicking: () => void
 }
 
 const logMessage = async (level: 'INFO' | 'ERROR' | 'WARN', message: string) => {
@@ -38,10 +40,13 @@ export const PanoramaViewer = memo(function PanoramaViewer({
   onHotspotClick,
   onPanoramaClick,
   onSceneHotspotClick,
+  onCancelPicking,
 }: PanoramaViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Viewer | null>(null)
   const markersPluginRef = useRef<MarkersPlugin | null>(null)
+  const isAddingHotspotRef = useRef(isAddingHotspot)
+  const onPanoramaClickRef = useRef(onPanoramaClick)
 
   // Memoize image URL calculation
   const imageUrl = useMemo(() => {
@@ -108,9 +113,10 @@ export const PanoramaViewer = memo(function PanoramaViewer({
       }
 
       // Handle panorama clicks for adding hotspots
+      // Note: Click must be quick - dragging will pan the panorama instead
       viewer.addEventListener('click', (e: any) => {
-        if (isAddingHotspot && e.data) {
-          onPanoramaClick({
+        if (isAddingHotspotRef.current && e.data) {
+          onPanoramaClickRef.current({
             yaw: e.data.yaw,
             pitch: e.data.pitch,
           })
@@ -163,8 +169,11 @@ export const PanoramaViewer = memo(function PanoramaViewer({
     }
   }, [markers])
 
-  // Update cursor style based on adding mode
+  // Update ref and cursor style based on adding mode
   useEffect(() => {
+    isAddingHotspotRef.current = isAddingHotspot
+    onPanoramaClickRef.current = onPanoramaClick
+    
     if (containerRef.current) {
       if (isAddingHotspot) {
         containerRef.current.classList.add('adding-hotspot')
@@ -172,13 +181,19 @@ export const PanoramaViewer = memo(function PanoramaViewer({
         containerRef.current.classList.remove('adding-hotspot')
       }
     }
-  }, [isAddingHotspot])
+  }, [isAddingHotspot, onPanoramaClick])
 
   return (
     <div 
       ref={containerRef} 
       className="panorama-viewer-container"
-      style={{ width: '100%', height: '100%' }}
-    />
+      style={{ width: '100%', height: '100%', position: 'relative' }}
+    >
+      {/* Temporarily disabled overlay for debugging */}
+      {/* <PanoramaPickingOverlay 
+        isActive={isAddingHotspot}
+        onCancel={onCancelPicking}
+      /> */}
+    </div>
   )
 })

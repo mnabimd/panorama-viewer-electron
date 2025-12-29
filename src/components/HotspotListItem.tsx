@@ -21,7 +21,7 @@ export function HotspotListItem({
     <div className="hotspot-item">
       <div className="hotspot-info">
         {getHotspotIcon(hotspot.type)}
-        <span className="text-base font-normal">{getHotspotLabel(hotspot, scenes)}</span>
+        <span className="hotspot-label">{getHotspotLabel(hotspot, scenes)}</span>
       </div>
       <div className="hotspot-actions">
         <button 

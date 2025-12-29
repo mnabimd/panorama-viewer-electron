@@ -189,11 +189,10 @@ export const PanoramaViewer = memo(function PanoramaViewer({
       className="panorama-viewer-container"
       style={{ width: '100%', height: '100%', position: 'relative' }}
     >
-      {/* Temporarily disabled overlay for debugging */}
-      {/* <PanoramaPickingOverlay 
+      <PanoramaPickingOverlay 
         isActive={isAddingHotspot}
         onCancel={onCancelPicking}
-      /> */}
+      />
     </div>
   )
 })

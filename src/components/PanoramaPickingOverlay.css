@@ -8,16 +8,17 @@
 }
 
 .picking-message {
-  background: rgba(249, 115, 22, 0.8);
-  color: white;
+  background: rgba(0, 0, 0, 0.85);
+  color: #f97316;
   padding: 0.875rem 1.5rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   justify-content: center;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.9rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  border-bottom: 2px solid #f97316;
   pointer-events: auto;
   animation: slideDown 0.3s ease-out;
 }
@@ -35,13 +36,14 @@
 
 .cancel-picking-btn {
   margin-left: auto;
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid #f97316;
   transition: all 0.2s;
 }
 
 .cancel-picking-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: white;
+  background: rgba(249, 115, 22, 0.2);
+  border-color: #ea580c;
+  color: #ea580c;
 }

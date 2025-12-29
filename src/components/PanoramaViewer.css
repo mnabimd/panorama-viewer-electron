@@ -219,3 +219,72 @@
   border-radius: 6px 6px 0 0 !important;
 }
 
+/* Plan Plugin Styling */
+.psv-plan {
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(8px);
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s ease;
+}
+
+.psv-plan:hover {
+  background: rgba(0, 0, 0, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Plan container */
+.psv-plan__container {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Leaflet map styling */
+.leaflet-container {
+  border-radius: 6px;
+  background: #1a1a1a !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.6) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 10px !important;
+}
+
+/* Plan hotspot markers */
+.psv-plan__spot {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.psv-plan__spot:hover {
+  transform: scale(1.4);
+  filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.8));
+}
+
+/* Plan buttons */
+.psv-plan__button {
+  background: rgba(0, 0, 0, 0.5) !important;
+  color: white !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease;
+}
+
+.psv-plan__button:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1);
+}
+
+/* Plan title */
+.psv-plan__title {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px);
+  color: white !important;
+  font-weight: 500;
+  padding: 8px 12px !important;
+  border-radius: 6px 6px 0 0 !important;
+}
+
+

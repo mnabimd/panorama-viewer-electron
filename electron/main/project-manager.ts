@@ -64,6 +64,8 @@ interface Scene {
   description?: string
   isVisible?: boolean  // Controls visibility in sidebar (default: true)
   isFeatured?: boolean  // Marks the scene as featured/indexed (only one can be featured)
+  coordinates?: [number, number]  // GPS coordinates [longitude, latitude]
+  bearing?: number  // Orientation/direction in degrees (0-360)
 }
 
 interface ProjectMetadata {
@@ -716,6 +718,78 @@ export function setupProjectHandlers() {
       return { success: true, scene: metadata.scenes[sceneIndex] }
     } catch (error) {
       console.error('Failed to toggle featured scene:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('update-scene-coordinates', async (_, { projectId, sceneId, coordinates }: { 
+    projectId: string, 
+    sceneId: string,
+    coordinates?: [number, number]
+  }) => {
+    try {
+      const PROJECTS_DIR = await getProjectsDir()
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // Update coordinates
+      metadata.scenes[sceneIndex].coordinates = coordinates
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to update scene coordinates:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('update-scene-bearing', async (_, { projectId, sceneId, bearing }: { 
+    projectId: string, 
+    sceneId: string,
+    bearing?: number
+  }) => {
+    try {
+      const PROJECTS_DIR = await getProjectsDir()
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // Update bearing
+      metadata.scenes[sceneIndex].bearing = bearing
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to update scene bearing:', error)
       throw error
     }
   })

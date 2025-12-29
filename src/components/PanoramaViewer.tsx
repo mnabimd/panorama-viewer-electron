@@ -2,12 +2,15 @@ import { useEffect, useRef, useMemo, memo } from 'react'
 import { Viewer } from '@photo-sphere-viewer/core'
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin'
 import { CompassPlugin } from '@photo-sphere-viewer/compass-plugin'
+import { PlanPlugin } from '@photo-sphere-viewer/plan-plugin'
 import { Scene, Hotspot } from '@/types/project.types'
 import { convertHotspotToMarker } from '@/utils/panorama.utils'
 import { PanoramaPickingOverlay } from './PanoramaPickingOverlay'
 import '@photo-sphere-viewer/core/index.css'
 import '@photo-sphere-viewer/markers-plugin/index.css'
 import '@photo-sphere-viewer/compass-plugin/index.css'
+import 'leaflet/dist/leaflet.css'
+import '@photo-sphere-viewer/plan-plugin/index.css'
 import './PanoramaViewer.css'
 
 interface PanoramaViewerProps {
@@ -69,8 +72,33 @@ const convertHotspotsToCompassHotspots = (hotspots: Hotspot[]) => {
   return hotspots.map(hotspot => ({
     yaw: hotspot.position.yaw,
     pitch: hotspot.position.pitch,
-    color: '#ff0000', // Red dots for hotspots
+    color: '#f97316', // Orange color matching app theme
   }))
+}
+
+// Convert hotspots to plan hotspots format
+const convertHotspotsToPlanHotspots = (hotspots: Hotspot[], sceneCoordinates: [number, number]) => {
+  return hotspots.map((hotspot, index) => {
+    // Get tooltip based on hotspot type
+    let tooltip = ''
+    if (hotspot.type === 'info') {
+      tooltip = hotspot.title || hotspot.content
+    } else if (hotspot.type === 'scene') {
+      tooltip = 'Navigate to scene'
+    } else if (hotspot.type === 'url') {
+      tooltip = hotspot.url
+    }
+
+    return {
+      id: hotspot.id || `hotspot-${index}`,
+      coordinates: sceneCoordinates, // Use scene's GPS coordinates for all hotspots
+      tooltip,
+      style: {
+        color: '#f97316',
+        size: 8,
+      },
+    }
+  })
 }
 
 // Memoize the component to prevent unnecessary re-renders
@@ -87,6 +115,7 @@ export const PanoramaViewer = memo(function PanoramaViewer({
   const viewerRef = useRef<Viewer | null>(null)
   const markersPluginRef = useRef<MarkersPlugin | null>(null)
   const compassPluginRef = useRef<CompassPlugin | null>(null)
+  const planPluginRef = useRef<PlanPlugin | null>(null)
   const isAddingHotspotRef = useRef(isAddingHotspot)
   const onPanoramaClickRef = useRef(onPanoramaClick)
 
@@ -116,6 +145,12 @@ export const PanoramaViewer = memo(function PanoramaViewer({
     return convertHotspotsToCompassHotspots(hotspots)
   }, [hotspots])
 
+  // Memoize plan hotspots configuration
+  const planHotspots = useMemo(() => {
+    const sceneCoords = scene.coordinates || [0, 0] as [number, number]
+    return convertHotspotsToPlanHotspots(hotspots, sceneCoords)
+  }, [hotspots, scene.coordinates])
+
   // Initialize viewer on mount
   useEffect(() => {
     if (!containerRef.current) return
@@ -140,7 +175,20 @@ export const PanoramaViewer = memo(function PanoramaViewer({
             coneColor: 'rgba(255, 255, 255, 0.5)',
             navigation: true,
             hotspots: compassHotspots,
-            hotspotColor: '#ff0000', // Red color for hotspots
+            hotspotColor: '#f97316', // Orange color matching app theme
+          }] as any,
+          [PlanPlugin, {
+            coordinates: scene.coordinates || [0, 0],
+            bearing: scene.bearing || 0,
+            size: { width: '300px', height: '200px' },
+            position: 'bottom left',
+            visibleOnLoad: true,
+            defaultZoom: 32,
+            hotspots: planHotspots,
+            spotStyle: {
+              size: 8,
+              color: '#f97316',
+            },
           }] as any,
         ],
         mousewheel: true,
@@ -174,6 +222,26 @@ export const PanoramaViewer = memo(function PanoramaViewer({
         compassPluginRef.current = compassPlugin
       }
 
+      // Get plan plugin instance
+      const planPlugin = viewer.getPlugin(PlanPlugin) as PlanPlugin | undefined
+      if (planPlugin) {
+        planPluginRef.current = planPlugin
+
+        // Handle plan hotspot clicks - navigate to the hotspot
+        planPlugin.addEventListener('select-hotspot', (e: any) => {
+          const hotspotId = e.hotspotId
+          const hotspot = hotspots.find(h => h.id === hotspotId || `hotspot-${hotspots.indexOf(h)}` === hotspotId)
+          if (hotspot) {
+            // Animate to the hotspot position
+            viewer.animate({
+              yaw: hotspot.position.yaw,
+              pitch: hotspot.position.pitch,
+              speed: '2rpm',
+            })
+          }
+        })
+      }
+
       // Handle panorama clicks for adding hotspots
       // Note: Click must be quick - dragging will pan the panorama instead
       viewer.addEventListener('click', (e: any) => {
@@ -200,6 +268,7 @@ export const PanoramaViewer = memo(function PanoramaViewer({
         viewerRef.current = null
         markersPluginRef.current = null
         compassPluginRef.current = null
+        planPluginRef.current = null
       }
     }
   }, []) // Only run on mount/unmount
@@ -244,6 +313,33 @@ export const PanoramaViewer = memo(function PanoramaViewer({
       console.error('Failed to update compass hotspots:', err)
     }
   }, [compassHotspots])
+
+  // Update plan coordinates when scene changes
+  useEffect(() => {
+    if (!planPluginRef.current) return
+
+    try {
+      const coords = scene.coordinates || [0, 0] as [number, number]
+      planPluginRef.current.setCoordinates(coords)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      logMessage('ERROR', `Failed to update plan coordinates: ${errorMessage}`)
+      console.error('Failed to update plan coordinates:', err)
+    }
+  }, [scene.coordinates])
+
+  // Update plan hotspots when hotspots change
+  useEffect(() => {
+    if (!planPluginRef.current) return
+
+    try {
+      planPluginRef.current.setHotspots(planHotspots)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      logMessage('ERROR', `Failed to update plan hotspots: ${errorMessage}`)
+      console.error('Failed to update plan hotspots:', err)
+    }
+  }, [planHotspots])
 
   // Update ref and cursor style based on adding mode
   useEffect(() => {

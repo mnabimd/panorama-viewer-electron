@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Scene } from "@/types/project.types"
+import { useToast } from "@/hooks/use-toast"
 
 interface UseSceneSettingsProps {
   project: any
@@ -18,6 +19,8 @@ export function useSceneSettings({
   deleteScene,
   refreshProject
 }: UseSceneSettingsProps) {
+  const { toast } = useToast()
+  
   // Scene name editing state
   const [editingSceneName, setEditingSceneName] = useState(false)
   const [tempSceneName, setTempSceneName] = useState("")
@@ -170,6 +173,56 @@ export function useSceneSettings({
     }
   }
 
+  // Update GPS coordinates handler
+  const handleUpdateCoordinates = async (longitude: number | undefined, latitude: number | undefined) => {
+    if (!project || !activeScene) return
+
+    try {
+      const coordinates = (longitude !== undefined && latitude !== undefined) 
+        ? [longitude, latitude] as [number, number]
+        : undefined
+
+      // @ts-ignore
+      await window.ipcRenderer.invoke('update-scene-coordinates', {
+        projectId: project.id,
+        sceneId: activeScene,
+        coordinates
+      })
+      await refreshProject()
+      
+      toast({
+        title: "GPS Coordinates Updated",
+        description: coordinates 
+          ? `Location set to ${latitude}, ${longitude}`
+          : "Location cleared",
+      })
+    } catch (error) {
+      console.error('Failed to update scene coordinates:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update GPS coordinates",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Update bearing handler
+  const handleUpdateBearing = async (bearing: number | undefined) => {
+    if (!project || !activeScene) return
+
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('update-scene-bearing', {
+        projectId: project.id,
+        sceneId: activeScene,
+        bearing
+      })
+      await refreshProject()
+    } catch (error) {
+      console.error('Failed to update scene bearing:', error)
+    }
+  }
+
   return {
     // State
     currentScene,
@@ -198,6 +251,7 @@ export function useSceneSettings({
     handleImageSelect,
     handleConfirmReplaceImage,
     handleDeleteAllScenes,
-    handleToggleFeatured
+    handleToggleFeatured,
+    handleUpdateCoordinates
   }
 }

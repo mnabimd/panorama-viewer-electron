@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -24,6 +25,7 @@ interface SceneSettingsPanelProps {
   onToggleAllHotspots: (checked: boolean) => void
   onReplaceImage: () => void
   onDeleteScene: () => void
+  onUpdateCoordinates: (longitude: number | undefined, latitude: number | undefined) => void
 }
 
 export function SceneSettingsPanel({
@@ -43,10 +45,27 @@ export function SceneSettingsPanel({
   onToggleFeatured,
   onToggleAllHotspots,
   onReplaceImage,
-  onDeleteScene
+  onDeleteScene,
+  onUpdateCoordinates
 }: SceneSettingsPanelProps) {
+  // Local state for GPS inputs to allow typing
+  const [localLongitude, setLocalLongitude] = useState<string>('')
+  const [localLatitude, setLocalLatitude] = useState<string>('')
+
+  // Update local state when scene changes
+  useEffect(() => {
+    setLocalLongitude(currentScene?.coordinates?.[0]?.toString() ?? '')
+    setLocalLatitude(currentScene?.coordinates?.[1]?.toString() ?? '')
+  }, [currentScene?.id, currentScene?.coordinates])
+
   if (!currentScene) {
     return <p className="text-sm text-gray-500">No scene selected</p>
+  }
+
+  const handleSaveCoordinates = () => {
+    const lon = localLongitude ? parseFloat(localLongitude) : undefined
+    const lat = localLatitude ? parseFloat(localLatitude) : undefined
+    onUpdateCoordinates(lon, lat)
   }
 
   return (
@@ -136,6 +155,40 @@ export function SceneSettingsPanel({
           checked={allHotspotsVisible}
           onCheckedChange={onToggleAllHotspots}
         />
+      </div>
+
+      {/* GPS Coordinates */}
+      <div className="space-y-2">
+        <Label className="text-xs text-gray-400">GPS Coordinates (Optional)</Label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="longitude" className="text-xs text-gray-500">Longitude</Label>
+            <Input
+              id="longitude"
+              type="number"
+              step="any"
+              value={localLongitude}
+              onChange={(e) => setLocalLongitude(e.target.value)}
+              onBlur={handleSaveCoordinates}
+              placeholder="e.g., -122.4194"
+              className="bg-[#252525] border-gray-700 text-white text-sm w-[80%]"
+            />
+          </div>
+          <div>
+            <Label htmlFor="latitude" className="text-xs text-gray-500">Latitude</Label>
+            <Input
+              id="latitude"
+              type="number"
+              step="any"
+              value={localLatitude}
+              onChange={(e) => setLocalLatitude(e.target.value)}
+              onBlur={handleSaveCoordinates}
+              placeholder="e.g., 37.7749"
+              className="bg-[#252525] border-gray-700 text-white text-sm w-[80%]"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-gray-600">Location for map display</p>
       </div>
 
       {/* Replace Scene Image */}

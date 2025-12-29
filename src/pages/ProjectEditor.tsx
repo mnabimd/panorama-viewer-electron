@@ -94,7 +94,8 @@ export function ProjectEditor() {
     handleImageSelect,
     handleConfirmReplaceImage,
     handleDeleteAllScenes,
-    handleToggleFeatured
+    handleToggleFeatured,
+    handleUpdateCoordinates
   } = useSceneSettings({
     project,
     activeScene,
@@ -268,6 +269,7 @@ export function ProjectEditor() {
                 onToggleAllHotspots={handleToggleAllHotspots}
                 onReplaceImage={handleReplaceImage}
                 onDeleteScene={() => setDeleteSceneConfirmOpen(true)}
+                onUpdateCoordinates={handleUpdateCoordinates}
               />
             </AccordionContent>
           </AccordionItem>

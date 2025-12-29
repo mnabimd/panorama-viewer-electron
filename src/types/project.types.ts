@@ -43,6 +43,8 @@ export interface Scene {
   description?: string
   isVisible?: boolean
   isFeatured?: boolean  // Marks the scene as featured/indexed (only one can be featured)
+  coordinates?: [number, number]  // GPS coordinates [longitude, latitude]
+  bearing?: number  // Orientation/direction in degrees (0-360)
 }
 
 // Project interface

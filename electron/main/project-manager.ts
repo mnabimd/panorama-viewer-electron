@@ -3,8 +3,15 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import { randomUUID } from 'node:crypto'
+import { getWorkspacePath } from './settings-manager'
 
-const PROJECTS_DIR = path.join(app.getPath('documents'), 'ABNabi360', 'projects')
+/**
+ * Get the projects directory from current workspace settings
+ */
+async function getProjectsDir(): Promise<string> {
+  const workspacePath = await getWorkspacePath()
+  return path.join(workspacePath, 'projects')
+}
 
 interface CreateProjectParams {
   name: string
@@ -79,6 +86,7 @@ interface ProjectMetadata {
 export function setupProjectHandlers() {
   ipcMain.handle('create-project', async (_, params: CreateProjectParams) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectId = `prj_${randomUUID().slice(0, 8)}`
       const projectDirName = projectId
       const projectPath = path.join(PROJECTS_DIR, projectDirName)
@@ -141,6 +149,7 @@ export function setupProjectHandlers() {
 
   ipcMain.handle('get-projects', async () => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       // Ensure projects directory exists
       await fs.mkdir(PROJECTS_DIR, { recursive: true })
 
@@ -185,6 +194,7 @@ export function setupProjectHandlers() {
 
   ipcMain.handle('get-project-by-id', async (_, projectId: string) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -208,6 +218,7 @@ export function setupProjectHandlers() {
 
   ipcMain.handle('rename-project', async (_, { projectId, newName }: { projectId: string, newName: string }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -239,6 +250,7 @@ export function setupProjectHandlers() {
     hotspotData: Omit<Hotspot, 'id'> 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -281,6 +293,7 @@ export function setupProjectHandlers() {
     hotspotData: Partial<Hotspot> 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -326,6 +339,7 @@ export function setupProjectHandlers() {
     hotspotId: string 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -363,6 +377,7 @@ export function setupProjectHandlers() {
     sceneId: string 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -399,6 +414,7 @@ export function setupProjectHandlers() {
     isNewUpload?: boolean
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -482,6 +498,7 @@ export function setupProjectHandlers() {
     newName: string 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -516,6 +533,7 @@ export function setupProjectHandlers() {
     sceneId: string 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -567,6 +585,7 @@ export function setupProjectHandlers() {
     isVisible: boolean 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -607,6 +626,7 @@ export function setupProjectHandlers() {
     isNewUpload: boolean
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -684,6 +704,7 @@ export function setupProjectHandlers() {
     isFeatured: boolean 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -729,6 +750,7 @@ export function setupProjectHandlers() {
     isVisible: boolean 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       
@@ -793,6 +815,7 @@ export function setupProjectHandlers() {
     isVisible: boolean 
   }) => {
     try {
+      const PROJECTS_DIR = await getProjectsDir()
       const projectPath = path.join(PROJECTS_DIR, projectId)
       const projectJsonPath = path.join(projectPath, 'project.json')
       

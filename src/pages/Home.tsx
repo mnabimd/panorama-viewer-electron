@@ -2,7 +2,6 @@ import { useState, useEffect } from "react"
 import { Dashboard } from "./Dashboard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { 
   Dialog, 
   DialogContent, 
@@ -18,9 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, Plus, User } from "lucide-react"
+import { Search, Plus, Settings } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { PROJECT_CATEGORIES } from "@/constants"
+import { SettingsDialog } from "@/components/SettingsDialog"
 import "./Home.css"
 
 export function Home() {
@@ -32,6 +32,12 @@ export function Home() {
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState("real-estate")
   const [titleError, setTitleError] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  const handleWorkspaceChanged = () => {
+    // Refresh projects when workspace changes
+    fetchProjects()
+  }
 
   const fetchProjects = async () => {
     try {
@@ -210,12 +216,15 @@ export function Home() {
             New Project <Plus size={18} className="ml-1" />
           </Button>
 
-          {/* User Avatar */}
-          <Avatar className="h-9 w-9">
-            <AvatarFallback className="bg-orange-500 text-white">
-              <User size={18} />
-            </AvatarFallback>
-          </Avatar>
+          {/* Settings Button */}
+          <Button
+            onClick={() => setSettingsOpen(true)}
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+          >
+            <Settings size={18} />
+          </Button>
         </div>
       </header>
 
@@ -303,6 +312,12 @@ export function Home() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onWorkspaceChanged={handleWorkspaceChanged}
+      />
     </div>
   )
 }

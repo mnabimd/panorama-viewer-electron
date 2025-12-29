@@ -2,8 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Search, Plus, User, Image as ImageIcon, Eye, Share2, Folder } from "lucide-react"
+import { Search, Plus, Settings, Image as ImageIcon, Eye, Share2, Folder } from "lucide-react"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -22,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { PROJECT_CATEGORIES } from "@/constants"
+import { SettingsDialog } from "@/components/SettingsDialog"
 import "./Dashboard.css"
 
 interface Project {
@@ -47,6 +47,12 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
   const [filter, setFilter] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  const handleWorkspaceChanged = () => {
+    // Refresh projects when workspace changes
+    onRefresh()
+  }
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -108,11 +114,14 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
             New Project <Plus size={18} className="ml-1" />
           </Button>
 
-          <Avatar className="h-9 w-9">
-            <AvatarFallback className="bg-orange-500 text-white">
-              <User size={18} />
-            </AvatarFallback>
-          </Avatar>
+          <Button
+            onClick={() => setSettingsOpen(true)}
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+          >
+            <Settings size={18} />
+          </Button>
         </div>
       </header>
 
@@ -250,6 +259,12 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onWorkspaceChanged={handleWorkspaceChanged}
+      />
     </div>
   )
 }

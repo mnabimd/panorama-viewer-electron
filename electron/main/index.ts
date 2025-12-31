@@ -5,7 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { update } from './update'
 import { setupProjectHandlers } from './project-manager'
-import { setupLogger } from './logger'
+import { setupLogger, logger } from './logger'
 import { setupSettingsHandlers } from './settings-manager'
 
 const require = createRequire(import.meta.url)
@@ -54,6 +54,7 @@ const preload = path.join(__dirname, '../preload/index.mjs')
 const indexHtml = path.join(RENDERER_DIST, 'index.html')
 
 async function createWindow() {
+  logger.info('Creating main window...')
   win = new BrowserWindow({
     title: 'Main window',
     icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
@@ -115,7 +116,10 @@ async function createWindow() {
   setupSettingsHandlers()
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  logger.info('App is ready, creating window...')
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   win = null

@@ -1,33 +1,51 @@
 import { ipcMain, app } from 'electron'
+import log from 'electron-log/main'
 import path from 'node:path'
-import fs from 'node:fs/promises'
 
-const LOG_FILE_PATH = path.join(app.getPath('documents'), 'ABNabi360', 'debug.log')
+// Configure electron-log
+log.initialize()
+
+// Set custom log file path
+const logPath = path.join(app.getPath('documents'), 'ABNabi360', 'debug.log')
+log.transports.file.resolvePathFn = () => logPath
+log.transports.file.level = 'info'
+log.transports.console.level = 'info'
+log.errorHandler.startCatching()
+
+// Export log instance for use in other files
+export const logger = log
 
 export function setupLogger() {
+  log.info('Logger initialized')
+  log.info(`App Version: ${app.getVersion()}`)
+  log.info(`User Data Path: ${app.getPath('userData')}`)
+  log.info(`Executable Path: ${app.getPath('exe')}`)
+  
+  // Handle log messages from renderer
   ipcMain.handle('log-message', async (_, { level, context, file, message }: { 
     level: string, 
     context: string, 
     file: string,
     message: string 
   }) => {
-    try {
-      const timestamp = new Date().toISOString()
-      const logEntry = `[${timestamp}] [${level}] [${context}] [${file}] ${message}\n`
-      
-      // Ensure directory exists
-      const logDir = path.dirname(LOG_FILE_PATH)
-      try {
-        await fs.access(logDir)
-      } catch {
-        await fs.mkdir(logDir, { recursive: true })
-      }
-
-      await fs.appendFile(LOG_FILE_PATH, logEntry, 'utf-8')
-      return { success: true }
-    } catch (error) {
-      console.error('Failed to write log:', error)
-      return { success: false, error }
+    const logMessage = `[${context}] [${file}] ${message}`
+    
+    switch (level.toLowerCase()) {
+      case 'error':
+        log.error(logMessage)
+        break
+      case 'warn':
+        log.warn(logMessage)
+        break
+      case 'info':
+        log.info(logMessage)
+        break
+      case 'debug':
+        log.debug(logMessage)
+        break
+      default:
+        log.info(logMessage)
     }
+    return { success: true }
   })
 }

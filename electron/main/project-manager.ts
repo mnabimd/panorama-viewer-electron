@@ -7,9 +7,20 @@ import { getWorkspacePath } from './settings-manager'
 import sharp from 'sharp'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
+import { logger } from './logger'
 
 // Set ffmpeg path
-ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+try {
+  let ffmpegPath = ffmpegInstaller.path
+  if (app.isPackaged) {
+    // In production, the binary is unpacked to app.asar.unpacked
+    ffmpegPath = ffmpegPath.replace('app.asar', 'app.asar.unpacked')
+  }
+  logger.info(`Setting ffmpeg path to: ${ffmpegPath}`)
+  ffmpeg.setFfmpegPath(ffmpegPath)
+} catch (error) {
+  logger.error(`Failed to set ffmpeg path: ${error}`)
+}
 
 /**
  * Detect media type based on file extension

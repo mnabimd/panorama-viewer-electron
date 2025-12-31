@@ -6,6 +6,11 @@
       "output": "release/${version}"
    },
    "files": ["dist-electron", "dist"],
+   "asarUnpack": [
+      "**/node_modules/sharp/**/*",
+      "**/node_modules/@img/**/*",
+      "**/node_modules/@ffmpeg-installer/ffmpeg/**/*"
+   ],
    "mac": {
       "artifactName": "${productName}_${version}.${ext}",
       "target": ["dmg", "zip"]

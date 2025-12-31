@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils"
 import { formatFileSize, formatRelativeTime } from "@/utils/format.utils"
-import { Check } from "lucide-react"
+import { Check, Video } from "lucide-react"
 
 interface SceneListRowProps {
   id: string
   name: string
   imagePath: string
   thumbnail?: string
+  mediaType?: 'image' | 'video'
   fileSize?: number
   dateAdded?: string
   selected?: boolean
@@ -18,6 +19,7 @@ export function SceneListRow({
   name,
   imagePath,
   thumbnail,
+  mediaType,
   fileSize,
   dateAdded,
   selected,
@@ -41,6 +43,11 @@ export function SceneListRow({
           alt={name}
           className="w-full h-full object-cover"
         />
+        {mediaType === 'video' && (
+          <div className="absolute top-1 left-1 bg-black/70 rounded px-1 py-0.5">
+            <Video size={10} className="text-white" />
+          </div>
+        )}
         {selected && (
           <div className="absolute inset-0 bg-orange-500/20 flex items-center justify-center">
             <div className="bg-orange-500 rounded-full p-1">

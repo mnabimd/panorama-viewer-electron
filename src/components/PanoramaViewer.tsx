@@ -3,12 +3,15 @@ import { Viewer } from '@photo-sphere-viewer/core'
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin'
 import { CompassPlugin } from '@photo-sphere-viewer/compass-plugin'
 import { PlanPlugin } from '@photo-sphere-viewer/plan-plugin'
+import { VideoPlugin } from '@photo-sphere-viewer/video-plugin'
+import { EquirectangularVideoAdapter } from '@photo-sphere-viewer/equirectangular-video-adapter'
 import { Scene, Hotspot } from '@/types/project.types'
 import { convertHotspotToMarker } from '@/utils/panorama.utils'
 import { PanoramaPickingOverlay } from './PanoramaPickingOverlay'
 import '@photo-sphere-viewer/core/index.css'
 import '@photo-sphere-viewer/markers-plugin/index.css'
 import '@photo-sphere-viewer/compass-plugin/index.css'
+import '@photo-sphere-viewer/video-plugin/index.css'
 import 'leaflet/dist/leaflet.css'
 import '@photo-sphere-viewer/plan-plugin/index.css'
 import './PanoramaViewer.css'
@@ -119,8 +122,8 @@ export const PanoramaViewer = memo(function PanoramaViewer({
   const isAddingHotspotRef = useRef(isAddingHotspot)
   const onPanoramaClickRef = useRef(onPanoramaClick)
 
-  // Memoize image URL calculation
-  const imageUrl = useMemo(() => {
+  // Memoize media URL calculation
+  const mediaUrl = useMemo(() => {
     const path = scene.imagePath
     if (path.startsWith('http') || path.startsWith('data:')) {
       return path
@@ -134,6 +137,11 @@ export const PanoramaViewer = memo(function PanoramaViewer({
     
     return path
   }, [scene.imagePath])
+
+  // Determine if this is a video scene
+  const isVideo = useMemo(() => {
+    return scene.mediaType === 'video'
+  }, [scene.mediaType])
 
   // Memoize markers configuration - only recreate when hotspots change
   const markers = useMemo(() => {
@@ -159,38 +167,63 @@ export const PanoramaViewer = memo(function PanoramaViewer({
       logMessage('INFO', `Initializing viewer for scene: ${scene.id}`)
 
       // Create viewer instance
+      // Build plugins array conditionally based on media type
+      const plugins: any[] = [
+        [MarkersPlugin, {
+          markers: markers,
+        }],
+        [CompassPlugin, {
+          size: '120px',
+          position: 'top-right',
+          backgroundSvg: compassBackgroundSvg,
+          coneColor: 'rgba(255, 255, 255, 0.5)',
+          navigation: true,
+          hotspots: compassHotspots,
+          hotspotColor: '#f97316', // Orange color matching app theme
+        }],
+        /* PlanPlugin temporarily hidden
+        [PlanPlugin, {
+          coordinates: scene.coordinates || [0, 0],
+          bearing: scene.bearing || 0,
+          size: { width: '300px', height: '200px' },
+          position: 'bottom left',
+          visibleOnLoad: true,
+          defaultZoom: 32,
+          hotspots: planHotspots,
+          spotStyle: {
+            size: 8,
+            color: '#f97316',
+          },
+        }],
+        */
+      ]
+
+      // Add VideoPlugin for video scenes
+      if (isVideo) {
+        plugins.push([VideoPlugin, {
+          progressbar: true,
+          bigbutton: true,
+        }])
+      }
+
       const viewer = new Viewer({
         container: containerRef.current,
-        panorama: imageUrl,
+        // For videos, use adapter and pass source in panorama object
+        ...(isVideo ? {
+          adapter: EquirectangularVideoAdapter,
+          panorama: {
+            source: mediaUrl,
+          },
+        } : {
+          // For images, use default adapter with panorama URL
+          panorama: mediaUrl,
+        }),
         defaultZoomLvl: 0,
-        navbar: ['zoom', 'move', 'fullscreen'],
-        plugins: [
-          [MarkersPlugin, {
-            markers: markers,
-          }] as any,
-          [CompassPlugin, {
-            size: '120px',
-            position: 'top-right',
-            backgroundSvg: compassBackgroundSvg,
-            coneColor: 'rgba(255, 255, 255, 0.5)',
-            navigation: true,
-            hotspots: compassHotspots,
-            hotspotColor: '#f97316', // Orange color matching app theme
-          }] as any,
-          [PlanPlugin, {
-            coordinates: scene.coordinates || [0, 0],
-            bearing: scene.bearing || 0,
-            size: { width: '300px', height: '200px' },
-            position: 'bottom left',
-            visibleOnLoad: true,
-            defaultZoom: 32,
-            hotspots: planHotspots,
-            spotStyle: {
-              size: 8,
-              color: '#f97316',
-            },
-          }] as any,
-        ],
+        // Update navbar to include video controls if it's a video
+        navbar: isVideo 
+          ? ['videoPlay', 'videoVolume', 'videoTime', 'zoom', 'move', 'fullscreen'] 
+          : ['zoom', 'move', 'fullscreen'],
+        plugins: plugins,
         mousewheel: true,
         mousemove: true,
         keyboard: 'fullscreen',
@@ -271,21 +304,23 @@ export const PanoramaViewer = memo(function PanoramaViewer({
         planPluginRef.current = null
       }
     }
-  }, []) // Only run on mount/unmount
+  }, [isVideo]) // Only reinitialize when media type changes (requires different adapter)
 
   // Update panorama when scene changes
   useEffect(() => {
-    if (viewerRef.current && imageUrl) {
+    if (viewerRef.current && mediaUrl) {
       try {
         logMessage('INFO', `Updating panorama for scene: ${scene.id}`)
-        viewerRef.current.setPanorama(imageUrl)
+        // For videos, pass source object; for images, pass URL directly
+        const panoramaConfig = isVideo ? { source: mediaUrl } : mediaUrl
+        viewerRef.current.setPanorama(panoramaConfig)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err)
         logMessage('ERROR', `Failed to update panorama: ${errorMessage}`)
         console.error('Failed to update panorama:', err)
       }
     }
-  }, [imageUrl, scene.id])
+  }, [mediaUrl, scene.id, isVideo])
 
   // Update markers when hotspots change
   useEffect(() => {

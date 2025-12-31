@@ -5,6 +5,27 @@ import os from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { getWorkspacePath } from './settings-manager'
 import sharp from 'sharp'
+import ffmpeg from 'fluent-ffmpeg'
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
+
+// Set ffmpeg path
+ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+
+/**
+ * Detect media type based on file extension
+ * @param filePath - Path to the media file
+ * @returns 'image' or 'video'
+ */
+function getMediaType(filePath: string): 'image' | 'video' {
+  const ext = path.extname(filePath).toLowerCase()
+  const videoExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.avi']
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
+  
+  if (videoExtensions.includes(ext)) {
+    return 'video'
+  }
+  return 'image' // Default to image for backward compatibility
+}
 
 /**
  * Generate a thumbnail from an image file
@@ -32,6 +53,50 @@ async function generateThumbnail(
     console.error('Failed to generate thumbnail:', error)
     throw error
   }
+}
+
+/**
+ * Generate a thumbnail from a video file
+ * @param sourcePath - Path to the source video
+ * @param destPath - Path where thumbnail should be saved
+ * @param width - Target width in pixels
+ * @returns Path to the generated thumbnail
+ */
+async function generateVideoThumbnail(
+  sourcePath: string,
+  destPath: string,
+  width: number = 400
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Create a temporary file for the extracted frame
+    const tempFramePath = destPath.replace('.jpg', '_temp.jpg')
+    
+    ffmpeg(sourcePath)
+      .screenshots({
+        timestamps: ['1'], // Extract frame at 1 second
+        filename: path.basename(tempFramePath),
+        folder: path.dirname(tempFramePath),
+        size: `${width}x?` // Width x auto-height to maintain aspect ratio
+      })
+      .on('end', async () => {
+        try {
+          // Use sharp to ensure consistent quality and format
+          await sharp(tempFramePath)
+            .jpeg({ quality: 80 })
+            .toFile(destPath)
+          
+          // Clean up temp file
+          await fs.unlink(tempFramePath).catch(() => {})
+          
+          resolve(destPath)
+        } catch (error) {
+          reject(error)
+        }
+      })
+      .on('error', (error) => {
+        reject(error)
+      })
+  })
 }
 
 
@@ -88,7 +153,8 @@ type Hotspot = SceneHotspot | InfoHotspot | UrlHotspot
 interface Scene {
   id: string
   name: string
-  imagePath: string
+  imagePath: string  // Stores both image and video paths for backward compatibility
+  mediaType?: 'image' | 'video'  // Type of media (defaults to 'image' for backward compatibility)
   hotspots: Hotspot[]
   thumbnail?: string
   description?: string
@@ -482,6 +548,9 @@ export function setupProjectHandlers() {
         console.warn('Could not get file metadata:', e)
       }
       
+      // Detect media type
+      const mediaType = getMediaType(finalImagePath)
+      
       // Generate thumbnail
       let thumbnailPath: string | undefined
       try {
@@ -495,12 +564,15 @@ export function setupProjectHandlers() {
         }
         
         // Generate unique thumbnail filename
-        const ext = path.extname(finalImagePath)
         const thumbnailFileName = `thumb_${randomUUID().slice(0, 8)}.jpg`
         const thumbnailDestPath = path.join(thumbnailsDir, thumbnailFileName)
         
-        // Generate thumbnail (400px wide, maintaining aspect ratio)
-        await generateThumbnail(finalImagePath, thumbnailDestPath, 400)
+        // Generate thumbnail based on media type
+        if (mediaType === 'video') {
+          await generateVideoThumbnail(finalImagePath, thumbnailDestPath, 400)
+        } else {
+          await generateThumbnail(finalImagePath, thumbnailDestPath, 400)
+        }
         thumbnailPath = thumbnailDestPath
       } catch (e) {
         console.warn('Could not generate thumbnail:', e)
@@ -512,6 +584,7 @@ export function setupProjectHandlers() {
         id: `scene_${randomUUID().slice(0, 8)}`,
         name: sceneName,
         imagePath: finalImagePath,
+        mediaType: mediaType,
         hotspots: [],
         isVisible: true,
         isFeatured: metadata.scenes.length === 0, // Mark first scene as featured
@@ -990,7 +1063,9 @@ export function setupProjectHandlers() {
       const result = await dialog.showOpenDialog({
         properties: ['openFile', 'multiSelections'],
         filters: [
-          { name: 'Images', extensions: ['jpg', 'jpeg'] }
+          { name: 'Media Files', extensions: ['jpg', 'jpeg', 'png', 'mp4', 'webm', 'ogv'] },
+          { name: 'Images', extensions: ['jpg', 'jpeg', 'png'] },
+          { name: 'Videos', extensions: ['mp4', 'webm', 'ogv'] }
         ]
       })
       
@@ -1000,7 +1075,7 @@ export function setupProjectHandlers() {
       
       return { canceled: false, filePaths: result.filePaths }
     } catch (error) {
-      console.error('Failed to select image file:', error)
+      console.error('Failed to select media file:', error)
       throw error
     }
   })

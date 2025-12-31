@@ -8,6 +8,7 @@ interface Scene {
   id: string
   name: string
   imagePath: string
+  mediaType?: 'image' | 'video'
   hotspots?: any[]
   thumbnail?: string
   description?: string
@@ -219,6 +220,7 @@ export function ImageGalleryPicker({
               name={scene.name}
               imagePath={scene.imagePath}
               thumbnail={scene.thumbnail}
+              mediaType={scene.mediaType}
               selected={selectedSceneId === scene.id}
               onClick={() => handleSceneSelect(scene)}
             />
@@ -258,6 +260,7 @@ export function ImageGalleryPicker({
               name={scene.name}
               imagePath={scene.imagePath}
               thumbnail={scene.thumbnail}
+              mediaType={scene.mediaType}
               fileSize={scene.metadata?.fileSize}
               dateAdded={scene.metadata?.dateAdded}
               selected={selectedSceneId === scene.id}

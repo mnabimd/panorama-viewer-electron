@@ -37,7 +37,8 @@ export type Hotspot = SceneHotspot | InfoHotspot | UrlHotspot
 export interface Scene {
   id: string
   name: string
-  imagePath: string
+  imagePath: string  // Stores both image and video paths for backward compatibility
+  mediaType?: 'image' | 'video'  // Type of media (defaults to 'image' for backward compatibility)
   hotspots: Hotspot[]
   thumbnail?: string
   description?: string

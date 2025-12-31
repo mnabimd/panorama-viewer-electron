@@ -1,4 +1,4 @@
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Video } from "lucide-react"
 import { Scene } from "@/types/project.types"
 
 interface SceneListItemProps {
@@ -25,6 +25,11 @@ export function SceneListItem({
         className="scene-thumbnail" 
         style={{ opacity: scene.isVisible !== false ? 1 : 0.15 }}
       />
+      {scene.mediaType === 'video' && (
+        <div className="absolute top-1 left-1 bg-black/70 rounded px-1 py-0.5 flex items-center gap-0.5">
+          <Video size={10} className="text-white" />
+        </div>
+      )}
       <div className="scene-name">{scene.name}</div>
       <button 
         className={`visibility-toggle ${scene.isVisible === false ? 'is-hidden' : ''}`}

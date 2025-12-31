@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { EditorLeftSidebar } from "@/components/EditorLeftSidebar"
 import { EditorRightSidebarHeader } from "@/components/EditorRightSidebarHeader"
 import { SceneSettingsPanel } from "@/components/SceneSettingsPanel"
+import { SceneCommentsPanel } from "@/components/SceneCommentsPanel"
 import { HotspotsPanel } from "@/components/HotspotsPanel"
 import { EditorDialogs } from "@/components/EditorDialogs"
 import { PanoramaViewer } from "@/components/PanoramaViewer"
@@ -270,6 +271,33 @@ export function ProjectEditor() {
     }
   }
 
+  // Handle scene comment update
+  const handleUpdateSceneComment = async (comment: string) => {
+    if (!project || !activeScene) return
+
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('update-scene', {
+        projectId: project.id,
+        sceneId: activeScene,
+        updates: { comment }
+      })
+      await refreshProject()
+      toast({
+        title: "Saved",
+        description: "Scene comment updated",
+        variant: "success",
+      })
+    } catch (error) {
+      console.error('Failed to update scene comment:', error)
+      toast({
+        title: "Error",
+        description: "Failed to save comment",
+        variant: "destructive",
+      })
+    }
+  }
+
   if (isLoading || !project) {
     return <div className="flex items-center justify-center h-screen bg-[#1a1a1a] text-white">Loading...</div>
   }
@@ -340,7 +368,7 @@ export function ProjectEditor() {
       <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
         <EditorRightSidebarHeader onPlay={handlePlayProject} />
 
-        <Accordion type="multiple" defaultValue={["hotspots"]} className="px-4">
+        <Accordion type="multiple" defaultValue={["hotspots", "comments"]} className="px-4">
           {/* Scene Settings Section */}
           <AccordionItem value="scene-settings" className="border-gray-700">
             <AccordionTrigger className="text-sm text-gray-400 hover:text-white py-3">
@@ -366,6 +394,19 @@ export function ProjectEditor() {
                 onReplaceImage={handleReplaceImage}
                 onDeleteScene={() => setDeleteSceneConfirmOpen(true)}
                 onUpdateCoordinates={handleUpdateCoordinates}
+              />
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Comments Section */}
+          <AccordionItem value="comments" className="border-gray-700">
+            <AccordionTrigger className="text-sm text-gray-400 hover:text-white py-3">
+              Comments
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-2">
+              <SceneCommentsPanel
+                currentScene={currentScene}
+                onUpdateComment={handleUpdateSceneComment}
               />
             </AccordionContent>
           </AccordionItem>

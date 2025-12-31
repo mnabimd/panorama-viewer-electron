@@ -905,9 +905,49 @@ export function setupProjectHandlers() {
         'utf-8'
       )
       
-      return { success: true, scene: metadata.scenes[sceneIndex] }
+      return { success: true }
     } catch (error) {
       console.error('Failed to toggle featured scene:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('update-scene', async (_, { projectId, sceneId, updates }: {
+    projectId: string,
+    sceneId: string,
+    updates: Partial<Scene>
+  }) => {
+    try {
+      const PROJECTS_DIR = await getProjectsDir()
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // Update the scene with provided fields
+      metadata.scenes[sceneIndex] = {
+        ...metadata.scenes[sceneIndex],
+        ...updates
+      }
+      
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to update scene:', error)
       throw error
     }
   })

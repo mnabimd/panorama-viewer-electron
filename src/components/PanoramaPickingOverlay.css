@@ -40,6 +40,8 @@
   background: rgba(249, 115, 22, 0.1);
   border: 1px solid #f97316;
   transition: all 0.2s;
+  position: relative;
+  left: -50px;
 }
 
 .cancel-picking-btn:hover {

@@ -53,6 +53,7 @@ interface HotspotDialogProps {
   mode: 'add' | 'edit'
   existingHotspot?: Hotspot
   initialPosition?: { yaw: number; pitch: number }
+  initialType?: HotspotType
   availableScenes: Scene[]
   onSubmit: (hotspotData: Omit<Hotspot, 'id'>) => Promise<void>
 }
@@ -63,6 +64,7 @@ export function HotspotDialog({
   mode,
   existingHotspot,
   initialPosition,
+  initialType,
   availableScenes,
   onSubmit
 }: HotspotDialogProps) {
@@ -104,8 +106,11 @@ export function HotspotDialog({
     } else {
       // Reset form for add mode
       resetForm()
+      if (initialType) {
+        setHotspotType(initialType)
+      }
     }
-  }, [mode, existingHotspot, open])
+  }, [mode, existingHotspot, open, initialType])
 
   const resetForm = () => {
     setHotspotType('scene')

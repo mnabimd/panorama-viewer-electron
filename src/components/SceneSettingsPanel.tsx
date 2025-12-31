@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Save, X, Pencil, Trash2 } from "lucide-react"
+import { Save, X, Pencil, Trash2, ChevronRight, ChevronDown } from "lucide-react"
 import { Scene, Hotspot } from "@/types/project.types"
 
 interface SceneSettingsPanelProps {
@@ -51,6 +51,7 @@ export function SceneSettingsPanel({
   // Local state for GPS inputs to allow typing
   const [localLongitude, setLocalLongitude] = useState<string>('')
   const [localLatitude, setLocalLatitude] = useState<string>('')
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
   // Update local state when scene changes
   useEffect(() => {
@@ -157,38 +158,50 @@ export function SceneSettingsPanel({
         />
       </div>
 
-      {/* GPS Coordinates */}
-      <div className="space-y-2">
-        <Label className="text-xs text-gray-400">GPS Coordinates (Optional)</Label>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label htmlFor="longitude" className="text-xs text-gray-500">Longitude</Label>
-            <Input
-              id="longitude"
-              type="number"
-              step="any"
-              value={localLongitude}
-              onChange={(e) => setLocalLongitude(e.target.value)}
-              onBlur={handleSaveCoordinates}
-              placeholder="e.g., -122.4194"
-              className="bg-[#252525] border-gray-700 text-white text-sm w-[80%]"
-            />
+      {/* Advanced Options (GPS) */}
+      <div className="space-y-2 pt-2 border-t border-gray-800">
+        <button
+          onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
+          className="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors w-full text-left"
+        >
+          {isAdvancedOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <span>Advanced Options</span>
+        </button>
+
+        {isAdvancedOpen && (
+          <div className="space-y-2 pl-2 animate-in slide-in-from-top-2 duration-200">
+            <Label className="text-xs text-gray-400">GPS Coordinates</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="longitude" className="text-xs text-gray-500">Longitude</Label>
+                <Input
+                  id="longitude"
+                  type="number"
+                  step="any"
+                  value={localLongitude}
+                  onChange={(e) => setLocalLongitude(e.target.value)}
+                  onBlur={handleSaveCoordinates}
+                  placeholder="e.g., -122.4194"
+                  className="bg-[#252525] border-gray-700 text-white text-sm w-[90%]"
+                />
+              </div>
+              <div>
+                <Label htmlFor="latitude" className="text-xs text-gray-500">Latitude</Label>
+                <Input
+                  id="latitude"
+                  type="number"
+                  step="any"
+                  value={localLatitude}
+                  onChange={(e) => setLocalLatitude(e.target.value)}
+                  onBlur={handleSaveCoordinates}
+                  placeholder="e.g., 37.7749"
+                  className="bg-[#252525] border-gray-700 text-white text-sm w-[90%]"
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-600">Location for map display</p>
           </div>
-          <div>
-            <Label htmlFor="latitude" className="text-xs text-gray-500">Latitude</Label>
-            <Input
-              id="latitude"
-              type="number"
-              step="any"
-              value={localLatitude}
-              onChange={(e) => setLocalLatitude(e.target.value)}
-              onBlur={handleSaveCoordinates}
-              placeholder="e.g., 37.7749"
-              className="bg-[#252525] border-gray-700 text-white text-sm w-[80%]"
-            />
-          </div>
-        </div>
-        <p className="text-xs text-gray-600">Location for map display</p>
+        )}
       </div>
 
       {/* Replace Scene Image */}

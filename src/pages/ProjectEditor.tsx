@@ -110,6 +110,7 @@ export function ProjectEditor() {
   // UI state
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
   const [isAddingHotspot, setIsAddingHotspot] = useState(false)
+  const [pendingHotspotType, setPendingHotspotType] = useState<'scene' | 'info' | 'url'>('scene')
   const [pendingHotspotPosition, setPendingHotspotPosition] = useState<{yaw: number; pitch: number} | null>(null)
   const [isUploadingScene, setIsUploadingScene] = useState(false)
   const [infoHotspotDialog, setInfoHotspotDialog] = useState<{
@@ -378,7 +379,10 @@ export function ProjectEditor() {
               <HotspotsPanel
                 hotspots={hotspots}
                 scenes={scenes}
-                onAddHotspot={() => handleAddHotspot(() => setIsAddingHotspot(true))}
+                onAddHotspot={(type) => handleAddHotspot(() => {
+                  setPendingHotspotType(type)
+                  setIsAddingHotspot(true)
+                })}
                 onEditHotspot={handleEditHotspot}
                 onToggleHotspotVisibility={handleToggleHotspotVisibility}
                 onDeleteHotspot={(hotspotId) => {
@@ -398,6 +402,7 @@ export function ProjectEditor() {
         setIsHotspotDialogOpen={setIsHotspotDialogOpen}
         editingHotspot={editingHotspot}
         pendingHotspotPosition={pendingHotspotPosition}
+        pendingHotspotType={pendingHotspotType}
         onHotspotDialogClose={() => setPendingHotspotPosition(null)}
         scenes={scenes}
         onSubmitHotspot={(data) => handleSubmitHotspot(data, refreshProject)}

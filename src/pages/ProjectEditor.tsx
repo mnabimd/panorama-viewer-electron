@@ -340,7 +340,7 @@ export function ProjectEditor() {
       <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
         <EditorRightSidebarHeader onPlay={handlePlayProject} />
 
-        <Accordion type="multiple" defaultValue={["scene-settings", "hotspots"]} className="px-4">
+        <Accordion type="multiple" defaultValue={["hotspots"]} className="px-4">
           {/* Scene Settings Section */}
           <AccordionItem value="scene-settings" className="border-gray-700">
             <AccordionTrigger className="text-sm text-gray-400 hover:text-white py-3">

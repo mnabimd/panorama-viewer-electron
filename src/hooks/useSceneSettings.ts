@@ -67,7 +67,7 @@ export function useSceneSettings({
 
   // Delete scene handler
   const handleDeleteScene = async () => {
-    if (!project || !activeScene || scenes.length <= 1) return
+    if (!project || !activeScene) return
     
     setIsDeletingScene(true)
     try {
@@ -138,13 +138,11 @@ export function useSceneSettings({
 
   // Delete all scenes handler
   const handleDeleteAllScenes = async () => {
-    if (!project || scenes.length <= 1) return
+    if (!project || scenes.length === 0) return
 
     try {
-      // Delete all scenes except the first one (can't delete all scenes)
-      const scenesToDelete = scenes.slice(1)
-      
-      for (const scene of scenesToDelete) {
+      // Delete all scenes
+      for (const scene of scenes) {
         await deleteScene(project.id, scene.id, refreshProject)
       }
       

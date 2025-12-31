@@ -35,8 +35,16 @@ export function ImageGalleryPicker({
       // @ts-ignore
       const result = await window.ipcRenderer.invoke('select-image-file')
       
-      if (!result.canceled && result.filePath) {
-        onImageSelect(result.filePath, null) // null sceneId means new upload
+      if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+        // Process all selected files sequentially
+        for (const filePath of result.filePaths) {
+          const selectResult = onImageSelect(filePath, null) as any // null sceneId means new upload
+          
+          // If onImageSelect returns a promise, wait for it
+          if (selectResult && typeof selectResult.then === 'function') {
+            await selectResult
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to select image:', error)

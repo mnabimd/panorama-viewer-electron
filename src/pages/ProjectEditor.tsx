@@ -134,10 +134,10 @@ export function ProjectEditor() {
   const handleImageDrop = async (filePath: string) => {
     if (!project) return
     
-    setIsUploadingScene(true)
     try {
-      const sceneCount = scenes.length
-      const sceneName = `Scene ${sceneCount + 1}`
+      // Get current scene count from the project state
+      const currentSceneCount = scenes.length
+      const sceneName = `Scene ${currentSceneCount + 1}`
       
       // @ts-ignore
       const result = await window.ipcRenderer.invoke('add-scene', {
@@ -163,8 +163,6 @@ export function ProjectEditor() {
         description: "Failed to add scene",
         variant: "destructive",
       })
-    } finally {
-      setIsUploadingScene(false)
     }
   }
 
@@ -250,7 +248,6 @@ export function ProjectEditor() {
         onStartEditName={() => setIsEditingName(true)}
         onRenameProject={renameProject}
         onSearchChange={setSearchQuery}
-        onNewImage={handleNewImage}
         onSceneSelect={setActiveScene}
         onToggleSceneVisibility={(e, sceneId) => project && toggleSceneVisibility(e, project.id, sceneId)}
         onDeleteAllScenes={() => setDeleteAllScenesConfirmOpen(true)}

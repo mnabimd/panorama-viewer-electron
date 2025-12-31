@@ -83,12 +83,21 @@
   cursor: pointer;
 }
 
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 1rem;
+}
+
 .scene-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   overflow-y: auto;
   flex: 1;
+  min-height: 0; /* Important for flex scrolling */
 }
 
 /* Custom scrollbar styling for scene list */
@@ -300,7 +309,6 @@
   cursor: pointer;
   transition: all 0.2s ease;
   min-height: 120px;
-  margin-top: 0.5rem;
 }
 
 .drag-drop-card:hover {

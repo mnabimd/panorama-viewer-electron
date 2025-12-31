@@ -210,14 +210,11 @@ export function SceneSettingsPanel({
         size="sm"
         className="w-full"
         onClick={onDeleteScene}
-        disabled={scenes.length <= 1 || isDeletingScene}
+        disabled={isDeletingScene}
       >
         <Trash2 size={16} className="mr-2" />
         {isDeletingScene ? 'Deleting...' : 'Delete Scene'}
       </Button>
-      {scenes.length <= 1 && (
-        <p className="text-xs text-gray-600 text-center">Cannot delete the only scene</p>
-      )}
     </>
   )
 }

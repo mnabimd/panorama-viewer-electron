@@ -4,7 +4,7 @@ import { validateImageFile } from '@/utils/imageValidation'
 import { useToast } from '@/hooks/use-toast'
 
 interface DragDropCardProps {
-  onImageDrop: (filePath: string) => void
+  onImageDrop: (filePath: string) => Promise<void>
   isUploading?: boolean
   className?: string
 }
@@ -12,6 +12,7 @@ interface DragDropCardProps {
 export function DragDropCard({ onImageDrop, isUploading = false, className = '' }: DragDropCardProps) {
   const [isSelecting, setIsSelecting] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const { toast } = useToast()
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -31,74 +32,111 @@ export function DragDropCard({ onImageDrop, isUploading = false, className = '' 
     e.stopPropagation()
     setIsDragOver(false)
 
-    if (isUploading || isSelecting) return
+    if (isUploading || isSelecting || uploadProgress) return
 
     const files = Array.from(e.dataTransfer.files)
     if (files.length === 0) return
 
-    // Only process the first file
-    const file = files[0]
+    // Process all files
+    const validFiles: File[] = []
+    const invalidFiles: string[] = []
 
-    // Validate the file
-    const validation = validateImageFile(file)
-    if (!validation.valid) {
-      toast({
-        title: 'Invalid File',
-        description: validation.error,
-        variant: 'destructive'
-      })
-      return
+    // Validate all files first
+    for (const file of files) {
+      const validation = validateImageFile(file)
+      if (validation.valid) {
+        validFiles.push(file)
+      } else {
+        invalidFiles.push(file.name)
+      }
     }
 
-    try {
-      // Read the file as ArrayBuffer
-      const arrayBuffer = await file.arrayBuffer()
-      
-      // Send to main process to save to temp location
-      // @ts-ignore
-      const result = await window.ipcRenderer.invoke('save-dropped-file', {
-        fileName: file.name,
-        fileBuffer: arrayBuffer
+    // Show error for invalid files
+    if (invalidFiles.length > 0) {
+      toast({
+        title: 'Invalid Files',
+        description: `${invalidFiles.length} file(s) rejected: Only JPG/JPEG allowed`,
+        variant: 'destructive'
       })
+    }
+
+    // Process valid files
+    if (validFiles.length === 0) return
+
+    try {
+      const totalFiles = validFiles.length
       
-      if (result.success && result.filePath) {
-        onImageDrop(result.filePath)
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to process dropped file',
-          variant: 'destructive'
+      // Process each valid file sequentially
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i]
+        
+        // Update progress
+        setUploadProgress({ current: i + 1, total: totalFiles })
+        
+        const arrayBuffer = await file.arrayBuffer()
+        
+        // @ts-ignore
+        const result = await window.ipcRenderer.invoke('save-dropped-file', {
+          fileName: file.name,
+          fileBuffer: arrayBuffer
         })
+        
+        if (result.success && result.filePath) {
+          // Wait for each file to be processed before moving to the next
+          await onImageDrop(result.filePath)
+        }
       }
+      
+      // Clear progress when done
+      setUploadProgress(null)
     } catch (error) {
-      console.error('Error processing dropped file:', error)
+      console.error('Error processing dropped files:', error)
+      setUploadProgress(null)
       toast({
         title: 'Error',
-        description: 'Failed to process dropped file',
+        description: 'Failed to process dropped files',
         variant: 'destructive'
       })
     }
   }
 
   const handleClick = async () => {
-    if (isUploading || isSelecting) return
+    if (isUploading || isSelecting || uploadProgress) return
 
     try {
       setIsSelecting(true)
       // @ts-ignore
       const result = await window.ipcRenderer.invoke('select-image-file')
       
-      if (!result.canceled && result.filePath) {
-        onImageDrop(result.filePath)
+      if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+        setIsSelecting(false)
+        
+        const totalFiles = result.filePaths.length
+        
+        // Process each selected file sequentially
+        for (let i = 0; i < result.filePaths.length; i++) {
+          const filePath = result.filePaths[i]
+          
+          // Update progress
+          setUploadProgress({ current: i + 1, total: totalFiles })
+          
+          // Wait for each file to be processed
+          await onImageDrop(filePath)
+        }
+        
+        // Clear progress when done
+        setUploadProgress(null)
+      } else {
+        setIsSelecting(false)
       }
     } catch (error) {
       console.error('Failed to select image:', error)
-    } finally {
       setIsSelecting(false)
+      setUploadProgress(null)
     }
   }
 
-  const loading = isUploading || isSelecting
+  const loading = isUploading || isSelecting || uploadProgress !== null
 
   return (
     <div
@@ -115,7 +153,11 @@ export function DragDropCard({ onImageDrop, isUploading = false, className = '' 
         <>
           <Loader2 className="drag-drop-icon animate-spin" size={32} />
           <span className="drag-drop-text">
-            {isSelecting ? 'Selecting...' : 'Uploading...'}
+            {uploadProgress 
+              ? `Uploading ${uploadProgress.current}/${uploadProgress.total}...`
+              : isSelecting 
+                ? 'Selecting...' 
+                : 'Uploading...'}
           </span>
         </>
       ) : (

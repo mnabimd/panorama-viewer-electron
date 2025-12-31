@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ChevronLeft, Search, Plus, Pencil } from "lucide-react"
+import { ChevronLeft, Search, Pencil } from "lucide-react"
 import { Scene } from "@/types/project.types"
 import { SceneListItem } from "./SceneListItem"
 import { DragDropCard } from "./DragDropCard"
@@ -17,11 +17,10 @@ interface EditorLeftSidebarProps {
   onStartEditName: () => void
   onRenameProject: () => void
   onSearchChange: (query: string) => void
-  onNewImage: () => void
   onSceneSelect: (sceneId: string) => void
   onToggleSceneVisibility: (e: React.MouseEvent, sceneId: string) => void
   onDeleteAllScenes: () => void
-  onImageDrop: (filePath: string) => void
+  onImageDrop: (filePath: string) => Promise<void>
   isUploadingScene?: boolean
 }
 
@@ -37,7 +36,6 @@ export function EditorLeftSidebar({
   onStartEditName,
   onRenameProject,
   onSearchChange,
-  onNewImage,
   onSceneSelect,
   onToggleSceneVisibility,
   onDeleteAllScenes,
@@ -85,7 +83,7 @@ export function EditorLeftSidebar({
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="sidebar-content">
         <div className="flex items-center gap-2 mb-4 bg-[#333] p-2 rounded-md">
           <Search size={16} className="text-gray-400" />
           <input 
@@ -97,24 +95,25 @@ export function EditorLeftSidebar({
           />
         </div>
 
-        <Button className="new-image-btn" onClick={onNewImage}>
-          <Plus size={16} className="mr-2" /> New Image
-        </Button>
-
         <div className="flex items-center justify-between mb-2 px-1">
           <span className="text-xs text-gray-400">{scenes.length} scene{scenes.length !== 1 ? 's' : ''}</span>
           <Button 
             variant="ghost" 
             size="sm" 
             className="delete-all-btn text-red-500 hover:text-red-400 h-auto p-0"
-            onClick={() => scenes.length > 1 && onDeleteAllScenes()}
-            disabled={scenes.length <= 1}
+            onClick={onDeleteAllScenes}
+            disabled={scenes.length === 0}
           >
             Delete All
           </Button>
         </div>
 
         <div className="scene-list">
+          <DragDropCard 
+            onImageDrop={onImageDrop}
+            isUploading={isUploadingScene}
+          />
+          <div>
           {filteredScenes.map((scene) => (
             <SceneListItem
               key={scene.id}
@@ -124,10 +123,7 @@ export function EditorLeftSidebar({
               onToggleVisibility={onToggleSceneVisibility}
             />
           ))}
-          <DragDropCard 
-            onImageDrop={onImageDrop}
-            isUploading={isUploadingScene}
-          />
+          </div>
         </div>
       </div>
     </aside>

@@ -519,11 +519,6 @@ export function setupProjectHandlers() {
         throw new Error('Scene not found')
       }
       
-      // Don't allow deleting the last scene
-      if (metadata.scenes.length <= 1) {
-        throw new Error('Cannot delete the only scene')
-      }
-      
       // Get the scene's image path before removing it
       const sceneImagePath = metadata.scenes[sceneIndex].imagePath
       const wasFeatured = metadata.scenes[sceneIndex].isFeatured
@@ -865,7 +860,7 @@ export function setupProjectHandlers() {
   ipcMain.handle('select-image-file', async () => {
     try {
       const result = await dialog.showOpenDialog({
-        properties: ['openFile'],
+        properties: ['openFile', 'multiSelections'],
         filters: [
           { name: 'Images', extensions: ['jpg', 'jpeg'] }
         ]
@@ -875,7 +870,7 @@ export function setupProjectHandlers() {
         return { canceled: true }
       }
       
-      return { canceled: false, filePath: result.filePaths[0] }
+      return { canceled: false, filePaths: result.filePaths }
     } catch (error) {
       console.error('Failed to select image file:', error)
       throw error

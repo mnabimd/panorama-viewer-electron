@@ -105,14 +105,15 @@ export function AddSceneDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[600px] bg-[#1a1a1a] text-white border-gray-700 max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] bg-[#1a1a1a] text-white border-gray-700 flex flex-col max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Add New Scene</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        {/* Scrollable content area */}
+        <div className="overflow-y-auto py-4 space-y-4 overflow-x-hidden">
           {/* Image Selection Grid */}
-          <div>
+          <div className="">
             <Label className="text-sm text-gray-400 mb-2 block">Select Image</Label>
             <ImageGalleryPicker
               existingScenes={existingScenes}
@@ -135,7 +136,8 @@ export function AddSceneDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        {/* Sticky footer */}
+        <DialogFooter className="border-t border-gray-700 pt-4">
           <Button
             variant="ghost"
             onClick={handleClose}

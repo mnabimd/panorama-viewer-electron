@@ -20,6 +20,7 @@ interface EditorLeftSidebarProps {
   onSceneSelect: (sceneId: string) => void
   onToggleSceneVisibility: (e: React.MouseEvent, sceneId: string) => void
   onDeleteAllScenes: () => void
+  onAddFromGallery: () => void
   onImageDrop: (filePath: string) => Promise<void>
   isUploadingScene?: boolean
 }
@@ -39,6 +40,7 @@ export function EditorLeftSidebar({
   onSceneSelect,
   onToggleSceneVisibility,
   onDeleteAllScenes,
+  onAddFromGallery,
   onImageDrop,
   isUploadingScene = false
 }: EditorLeftSidebarProps) {
@@ -97,15 +99,25 @@ export function EditorLeftSidebar({
 
         <div className="flex items-center justify-between mb-2 px-1">
           <span className="text-xs text-gray-400">{scenes.length} scene{scenes.length !== 1 ? 's' : ''}</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="delete-all-btn text-red-500 hover:text-red-400 h-auto p-0"
-            onClick={onDeleteAllScenes}
-            disabled={scenes.length === 0}
-          >
-            Delete All
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-orange-500 hover:text-orange-400 h-auto p-0 text-xs"
+              onClick={onAddFromGallery}
+            >
+              + Gallery
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="delete-all-btn text-red-500 hover:text-red-400 h-auto p-0"
+              onClick={onDeleteAllScenes}
+              disabled={scenes.length === 0}
+            >
+              Delete All
+            </Button>
+          </div>
         </div>
 
         <div className="scene-list">

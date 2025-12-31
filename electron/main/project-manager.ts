@@ -66,6 +66,10 @@ interface Scene {
   isFeatured?: boolean  // Marks the scene as featured/indexed (only one can be featured)
   coordinates?: [number, number]  // GPS coordinates [longitude, latitude]
   bearing?: number  // Orientation/direction in degrees (0-360)
+  metadata?: {
+    fileSize?: number  // File size in bytes
+    dateAdded?: string  // ISO date string when scene was added
+  }
 }
 
 interface ProjectMetadata {
@@ -435,6 +439,18 @@ export function setupProjectHandlers() {
         finalImagePath = destPath
       }
       
+      // Get file metadata
+      let fileMetadata: { fileSize?: number; dateAdded?: string } = {}
+      try {
+        const stats = await fs.stat(finalImagePath)
+        fileMetadata = {
+          fileSize: stats.size,
+          dateAdded: new Date().toISOString()
+        }
+      } catch (e) {
+        console.warn('Could not get file metadata:', e)
+      }
+      
       // Create new scene
       const newScene: Scene = {
         id: `scene_${randomUUID().slice(0, 8)}`,
@@ -442,7 +458,8 @@ export function setupProjectHandlers() {
         imagePath: finalImagePath,
         hotspots: [],
         isVisible: true,
-        isFeatured: metadata.scenes.length === 0 // Mark first scene as featured
+        isFeatured: metadata.scenes.length === 0, // Mark first scene as featured
+        metadata: fileMetadata
       }
       
       // Add scene to project
@@ -854,6 +871,23 @@ export function setupProjectHandlers() {
     } catch (error) {
       console.error('Failed to save dropped file:', error)
       throw error
+    }
+  })
+
+  ipcMain.handle('get-file-metadata', async (_, filePath: string) => {
+    try {
+      const stats = await fs.stat(filePath)
+      return {
+        success: true,
+        metadata: {
+          fileSize: stats.size,
+          dateAdded: stats.birthtime.toISOString(),
+          dateModified: stats.mtime.toISOString()
+        }
+      }
+    } catch (error) {
+      console.error('Failed to get file metadata:', error)
+      return { success: false, error: 'File not found or inaccessible' }
     }
   })
 

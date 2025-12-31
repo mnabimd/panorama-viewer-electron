@@ -251,6 +251,7 @@ export function ProjectEditor() {
         onSceneSelect={setActiveScene}
         onToggleSceneVisibility={(e, sceneId) => project && toggleSceneVisibility(e, project.id, sceneId)}
         onDeleteAllScenes={() => setDeleteAllScenesConfirmOpen(true)}
+        onAddFromGallery={() => setIsAddSceneDialogOpen(true)}
         onImageDrop={handleImageDrop}
         isUploadingScene={isUploadingScene}
       />

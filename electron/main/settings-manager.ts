@@ -11,6 +11,7 @@ interface AppSettings {
   workspacePath: string
   photoCompressionEnabled: boolean
   recentWorkspaces: string[]
+  galleryViewMode?: 'grid' | 'list'  // Gallery view mode preference (default: grid)
   lastUpdatedAt: string
 }
 
@@ -34,6 +35,7 @@ function getDefaultSettings(): AppSettings {
     workspacePath: DEFAULT_WORKSPACE,
     photoCompressionEnabled: false,
     recentWorkspaces: [],
+    galleryViewMode: 'grid',
     lastUpdatedAt: new Date().toISOString()
   }
 }
@@ -280,6 +282,37 @@ export function setupSettingsHandlers() {
       return { success: true, settings: updatedSettings }
     } catch (error) {
       console.error('Failed to update photo compression:', error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }
+    }
+  })
+
+  // Get gallery view mode
+  ipcMain.handle('get-gallery-view-mode', async () => {
+    try {
+      const settings = await getAppSettings()
+      return { success: true, viewMode: settings.galleryViewMode || 'grid' }
+    } catch (error) {
+      console.error('Failed to get gallery view mode:', error)
+      return { success: false, viewMode: 'grid' }
+    }
+  })
+
+  // Set gallery view mode
+  ipcMain.handle('set-gallery-view-mode', async (_, viewMode: 'grid' | 'list') => {
+    try {
+      const settings = await getAppSettings()
+      const updatedSettings: AppSettings = {
+        ...settings,
+        galleryViewMode: viewMode
+      }
+
+      await saveSettings(updatedSettings)
+      return { success: true, settings: updatedSettings }
+    } catch (error) {
+      console.error('Failed to set gallery view mode:', error)
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 

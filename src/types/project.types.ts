@@ -45,6 +45,10 @@ export interface Scene {
   isFeatured?: boolean  // Marks the scene as featured/indexed (only one can be featured)
   coordinates?: [number, number]  // GPS coordinates [longitude, latitude]
   bearing?: number  // Orientation/direction in degrees (0-360)
+  metadata?: {
+    fileSize?: number  // File size in bytes
+    dateAdded?: string  // ISO date string when scene was added
+  }
 }
 
 // Project interface

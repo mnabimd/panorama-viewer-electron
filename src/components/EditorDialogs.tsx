@@ -209,12 +209,13 @@ export function EditorDialogs({
 
       {/* Replace Scene Image Dialog */}
       <Dialog open={isReplaceImageOpen} onOpenChange={setIsReplaceImageOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-[#1a1a1a] text-white border-gray-700 max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[800px] bg-[#1a1a1a] text-white border-gray-700 flex flex-col max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Replace Scene Image</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          {/* Scrollable content area */}
+          <div className="overflow-y-auto flex-1 py-4">
             <div>
               <Label className="text-sm text-gray-400 mb-2 block">Select New Image</Label>
               <ImageGalleryPicker
@@ -226,7 +227,8 @@ export function EditorDialogs({
             </div>
           </div>
 
-          <DialogFooter>
+          {/* Sticky footer */}
+          <DialogFooter className="border-t border-gray-700 pt-4">
             <Button
               variant="ghost"
               onClick={() => setIsReplaceImageOpen(false)}

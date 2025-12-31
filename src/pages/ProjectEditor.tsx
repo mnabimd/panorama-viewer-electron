@@ -13,11 +13,13 @@ import { useProject } from "@/hooks/useProject"
 import { useHotspots } from "@/hooks/useHotspots"
 import { useScenes } from "@/hooks/useScenes"
 import { useSceneSettings } from "@/hooks/useSceneSettings"
+import { useToast } from "@/hooks/use-toast"
 import "./ProjectEditor.css"
 
 export function ProjectEditor() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const { toast } = useToast()
   
   // Custom hooks
   const {
@@ -109,6 +111,7 @@ export function ProjectEditor() {
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
   const [isAddingHotspot, setIsAddingHotspot] = useState(false)
   const [pendingHotspotPosition, setPendingHotspotPosition] = useState<{yaw: number; pitch: number} | null>(null)
+  const [isUploadingScene, setIsUploadingScene] = useState(false)
 
   // Load hotspots when active scene changes
   useEffect(() => {
@@ -126,6 +129,44 @@ export function ProjectEditor() {
   }, [scenes, activeScene, project])
 
   const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen)
+
+  // Handle image drop from drag-and-drop card
+  const handleImageDrop = async (filePath: string) => {
+    if (!project) return
+    
+    setIsUploadingScene(true)
+    try {
+      const sceneCount = scenes.length
+      const sceneName = `Scene ${sceneCount + 1}`
+      
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('add-scene', {
+        projectId: project.id,
+        sceneName,
+        imagePath: filePath,
+        isNewUpload: true
+      })
+      
+      if (result.success) {
+        await refreshProject()
+        setActiveScene(result.scene.id)
+        toast({
+          title: "Success",
+          description: `${sceneName} added successfully`,
+          variant: "success",
+        })
+      }
+    } catch (error) {
+      console.error('Failed to add scene:', error)
+      toast({
+        title: "Error",
+        description: "Failed to add scene",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploadingScene(false)
+    }
+  }
 
   // Handle scene deletion with active scene update
   const handleDeleteSceneWrapper = async () => {
@@ -213,6 +254,8 @@ export function ProjectEditor() {
         onSceneSelect={setActiveScene}
         onToggleSceneVisibility={(e, sceneId) => project && toggleSceneVisibility(e, project.id, sceneId)}
         onDeleteAllScenes={() => setDeleteAllScenesConfirmOpen(true)}
+        onImageDrop={handleImageDrop}
+        isUploadingScene={isUploadingScene}
       />
 
       {/* Center Content */}

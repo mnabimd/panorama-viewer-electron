@@ -285,3 +285,66 @@
 .hotspot-action-btn.text-red-500:hover {
   background-color: rgba(239, 68, 68, 0.1);
 }
+
+/* Drag and Drop Card Styles */
+.drag-drop-card {
+  border: 2px dashed #444;
+  border-radius: 0.5rem;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #2a2a2a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 120px;
+  margin-top: 0.5rem;
+}
+
+.drag-drop-card:hover {
+  border-color: #666;
+  background-color: #333;
+}
+
+.drag-drop-card.drag-over {
+  border-color: #f97316;
+  border-style: solid;
+  background-color: rgba(249, 115, 22, 0.1);
+}
+
+.drag-drop-card.uploading {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.drag-drop-icon {
+  color: #888;
+  transition: color 0.2s;
+}
+
+.drag-drop-card:hover .drag-drop-icon,
+.drag-drop-card.drag-over .drag-drop-icon {
+  color: #f97316;
+}
+
+.drag-drop-text {
+  font-size: 0.875rem;
+  color: #888;
+  text-align: center;
+  transition: color 0.2s;
+}
+
+.drag-drop-card:hover .drag-drop-text,
+.drag-drop-card.drag-over .drag-drop-text {
+  color: #f97316;
+  font-weight: 500;
+}
+
+.drag-drop-subtext {
+  font-size: 0.75rem;
+  color: #666;
+  text-align: center;
+}

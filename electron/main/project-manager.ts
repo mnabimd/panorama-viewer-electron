@@ -841,6 +841,27 @@ export function setupProjectHandlers() {
     }
   })
 
+  ipcMain.handle('save-dropped-file', async (_, { fileName, fileBuffer }: { 
+    fileName: string, 
+    fileBuffer: ArrayBuffer 
+  }) => {
+    try {
+      const tmpDir = os.tmpdir()
+      const timestamp = Date.now()
+      const ext = path.extname(fileName)
+      const tempFileName = `dropped_${timestamp}${ext}`
+      const tempFilePath = path.join(tmpDir, tempFileName)
+      
+      // Write the buffer to a temporary file
+      await fs.writeFile(tempFilePath, Buffer.from(fileBuffer))
+      
+      return { success: true, filePath: tempFilePath }
+    } catch (error) {
+      console.error('Failed to save dropped file:', error)
+      throw error
+    }
+  })
+
   ipcMain.handle('select-image-file', async () => {
     try {
       const result = await dialog.showOpenDialog({

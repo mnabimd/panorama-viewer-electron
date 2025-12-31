@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input"
 import { ChevronLeft, Search, Plus, Pencil } from "lucide-react"
 import { Scene } from "@/types/project.types"
 import { SceneListItem } from "./SceneListItem"
+import { DragDropCard } from "./DragDropCard"
 
 interface EditorLeftSidebarProps {
   projectName: string
@@ -20,6 +21,8 @@ interface EditorLeftSidebarProps {
   onSceneSelect: (sceneId: string) => void
   onToggleSceneVisibility: (e: React.MouseEvent, sceneId: string) => void
   onDeleteAllScenes: () => void
+  onImageDrop: (filePath: string) => void
+  isUploadingScene?: boolean
 }
 
 export function EditorLeftSidebar({
@@ -37,7 +40,9 @@ export function EditorLeftSidebar({
   onNewImage,
   onSceneSelect,
   onToggleSceneVisibility,
-  onDeleteAllScenes
+  onDeleteAllScenes,
+  onImageDrop,
+  isUploadingScene = false
 }: EditorLeftSidebarProps) {
   return (
     <aside className="editor-sidebar-left">
@@ -119,6 +124,10 @@ export function EditorLeftSidebar({
               onToggleVisibility={onToggleSceneVisibility}
             />
           ))}
+          <DragDropCard 
+            onImageDrop={onImageDrop}
+            isUploading={isUploadingScene}
+          />
         </div>
       </div>
     </aside>

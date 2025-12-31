@@ -169,7 +169,7 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
                         const displayScene = featuredScene || scenes[0]
                         
                         return displayScene?.imagePath ? (
-                          <img src={`file://${displayScene.imagePath}`} alt={project.name} />
+                          <img src={`file://${displayScene.thumbnail || displayScene.imagePath}`} alt={project.name} />
                         ) : (
                           <div className="thumbnail-placeholder">
                             <ImageIcon size={32} />

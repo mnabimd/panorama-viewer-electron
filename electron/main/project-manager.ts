@@ -4,6 +4,36 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { getWorkspacePath } from './settings-manager'
+import sharp from 'sharp'
+
+/**
+ * Generate a thumbnail from an image file
+ * @param sourcePath - Path to the source image
+ * @param destPath - Path where thumbnail should be saved
+ * @param width - Target width in pixels (height will be calculated to maintain aspect ratio)
+ * @returns Path to the generated thumbnail
+ */
+async function generateThumbnail(
+  sourcePath: string, 
+  destPath: string, 
+  width: number = 400
+): Promise<string> {
+  try {
+    await sharp(sourcePath)
+      .resize(width, null, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 80 })
+      .toFile(destPath)
+    
+    return destPath
+  } catch (error) {
+    console.error('Failed to generate thumbnail:', error)
+    throw error
+  }
+}
+
 
 /**
  * Get the projects directory from current workspace settings
@@ -439,6 +469,7 @@ export function setupProjectHandlers() {
         finalImagePath = destPath
       }
       
+      
       // Get file metadata
       let fileMetadata: { fileSize?: number; dateAdded?: string } = {}
       try {
@@ -451,6 +482,31 @@ export function setupProjectHandlers() {
         console.warn('Could not get file metadata:', e)
       }
       
+      // Generate thumbnail
+      let thumbnailPath: string | undefined
+      try {
+        const thumbnailsDir = path.join(projectPath, 'thumbnails')
+        
+        // Ensure thumbnails directory exists
+        try {
+          await fs.access(thumbnailsDir)
+        } catch {
+          await fs.mkdir(thumbnailsDir, { recursive: true })
+        }
+        
+        // Generate unique thumbnail filename
+        const ext = path.extname(finalImagePath)
+        const thumbnailFileName = `thumb_${randomUUID().slice(0, 8)}.jpg`
+        const thumbnailDestPath = path.join(thumbnailsDir, thumbnailFileName)
+        
+        // Generate thumbnail (400px wide, maintaining aspect ratio)
+        await generateThumbnail(finalImagePath, thumbnailDestPath, 400)
+        thumbnailPath = thumbnailDestPath
+      } catch (e) {
+        console.warn('Could not generate thumbnail:', e)
+        // Continue without thumbnail if generation fails
+      }
+      
       // Create new scene
       const newScene: Scene = {
         id: `scene_${randomUUID().slice(0, 8)}`,
@@ -459,8 +515,10 @@ export function setupProjectHandlers() {
         hotspots: [],
         isVisible: true,
         isFeatured: metadata.scenes.length === 0, // Mark first scene as featured
+        thumbnail: thumbnailPath,
         metadata: fileMetadata
       }
+
       
       // Add scene to project
       if (!Array.isArray(metadata.scenes)) {
@@ -656,8 +714,43 @@ export function setupProjectHandlers() {
         finalImagePath = destPath
       }
       
-      // Update scene image path
+      // Regenerate thumbnail for the new image
+      const oldThumbnailPath = metadata.scenes[sceneIndex].thumbnail
+      let newThumbnailPath: string | undefined
+      try {
+        const thumbnailsDir = path.join(projectPath, 'thumbnails')
+        
+        // Ensure thumbnails directory exists
+        try {
+          await fs.access(thumbnailsDir)
+        } catch {
+          await fs.mkdir(thumbnailsDir, { recursive: true })
+        }
+        
+        // Generate unique thumbnail filename
+        const thumbnailFileName = `thumb_${randomUUID().slice(0, 8)}.jpg`
+        const thumbnailDestPath = path.join(thumbnailsDir, thumbnailFileName)
+        
+        // Generate thumbnail (400px wide, maintaining aspect ratio)
+        await generateThumbnail(finalImagePath, thumbnailDestPath, 400)
+        newThumbnailPath = thumbnailDestPath
+        
+        // Delete old thumbnail if it exists
+        if (oldThumbnailPath) {
+          try {
+            await fs.unlink(oldThumbnailPath)
+          } catch (e) {
+            console.warn('Could not delete old thumbnail:', e)
+          }
+        }
+      } catch (e) {
+        console.warn('Could not generate thumbnail:', e)
+        // Continue without thumbnail if generation fails
+      }
+      
+      // Update scene image path and thumbnail
       metadata.scenes[sceneIndex].imagePath = finalImagePath
+      metadata.scenes[sceneIndex].thumbnail = newThumbnailPath
       metadata.updatedAt = new Date().toISOString()
       
       await fs.writeFile(
@@ -681,6 +774,7 @@ export function setupProjectHandlers() {
           }
         }
       }
+
       
       return { success: true, scene: metadata.scenes[sceneIndex] }
     } catch (error) {

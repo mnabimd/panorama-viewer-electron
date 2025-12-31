@@ -6,6 +6,7 @@ interface SceneListRowProps {
   id: string
   name: string
   imagePath: string
+  thumbnail?: string
   fileSize?: number
   dateAdded?: string
   selected?: boolean
@@ -16,6 +17,7 @@ export function SceneListRow({
   id,
   name,
   imagePath,
+  thumbnail,
   fileSize,
   dateAdded,
   selected,
@@ -35,7 +37,7 @@ export function SceneListRow({
       {/* Thumbnail */}
       <div className="relative w-20 h-14 flex-shrink-0 rounded overflow-hidden bg-gray-900">
         <img
-          src={`file://${imagePath}`}
+          src={`file://${thumbnail || imagePath}`}
           alt={name}
           className="w-full h-full object-cover"
         />

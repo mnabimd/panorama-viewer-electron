@@ -20,7 +20,7 @@ export function SceneListItem({
       onClick={() => onSelect(scene.id)}
     >
       <img 
-        src={`file://${scene.imagePath}`}
+        src={`file://${scene.thumbnail || scene.imagePath}`}
         alt={scene.name} 
         className="scene-thumbnail" 
         style={{ opacity: scene.isVisible !== false ? 1 : 0.15 }}

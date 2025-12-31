@@ -4,12 +4,13 @@ interface SceneCardProps {
   id: string
   name: string
   imagePath: string
+  thumbnail?: string
   selected?: boolean
   onClick?: () => void
   className?: string
 }
 
-export function SceneCard({ id, name, imagePath, selected, onClick, className }: SceneCardProps) {
+export function SceneCard({ id, name, imagePath, thumbnail, selected, onClick, className }: SceneCardProps) {
   return (
     <div
       onClick={onClick}
@@ -24,7 +25,7 @@ export function SceneCard({ id, name, imagePath, selected, onClick, className }:
       )}
     >
       <img
-        src={`file://${imagePath}`}
+        src={`file://${thumbnail || imagePath}`}
         alt={name}
         className="w-full h-full object-cover"
       />

@@ -218,6 +218,7 @@ export function ImageGalleryPicker({
               id={scene.id}
               name={scene.name}
               imagePath={scene.imagePath}
+              thumbnail={scene.thumbnail}
               selected={selectedSceneId === scene.id}
               onClick={() => handleSceneSelect(scene)}
             />
@@ -256,6 +257,7 @@ export function ImageGalleryPicker({
               id={scene.id}
               name={scene.name}
               imagePath={scene.imagePath}
+              thumbnail={scene.thumbnail}
               fileSize={scene.metadata?.fileSize}
               dateAdded={scene.metadata?.dateAdded}
               selected={selectedSceneId === scene.id}

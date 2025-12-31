@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { HotspotDialog } from "./HotspotDialog"
+import { InfoHotspotDialog } from "./InfoHotspotDialog"
 import { AddSceneDialog } from "./AddSceneDialog"
 import { ImageGalleryPicker } from "./ImageGalleryPicker"
 import { Hotspot, Scene } from "@/types/project.types"
@@ -55,6 +56,14 @@ interface EditorDialogsProps {
   setIsAddSceneDialogOpen: (open: boolean) => void
   projectId: string
   onSceneAdded: () => void
+
+  // Info Hotspot Dialog
+  infoHotspotDialog: {
+    isOpen: boolean
+    title: string
+    content: string
+  }
+  onCloseInfoHotspotDialog: () => void
 }
 
 export function EditorDialogs({
@@ -90,8 +99,11 @@ export function EditorDialogs({
   onConfirmReplaceImage,
   isAddSceneDialogOpen,
   setIsAddSceneDialogOpen,
+
   projectId,
-  onSceneAdded
+  onSceneAdded,
+  infoHotspotDialog,
+  onCloseInfoHotspotDialog
 }: EditorDialogsProps) {
   return (
     <>
@@ -247,13 +259,20 @@ export function EditorDialogs({
         </DialogContent>
       </Dialog>
 
-      {/* Add Scene Dialog */}
       <AddSceneDialog
         open={isAddSceneDialogOpen}
         onOpenChange={setIsAddSceneDialogOpen}
         projectId={projectId}
         existingScenes={scenes}
         onSceneAdded={onSceneAdded}
+      />
+
+      {/* Info Hotspot Dialog */}
+      <InfoHotspotDialog
+        isOpen={infoHotspotDialog.isOpen}
+        onClose={onCloseInfoHotspotDialog}
+        title={infoHotspotDialog.title}
+        content={infoHotspotDialog.content}
       />
     </>
   )

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { EditorLeftSidebar } from "@/components/EditorLeftSidebar"
@@ -112,6 +112,15 @@ export function ProjectEditor() {
   const [isAddingHotspot, setIsAddingHotspot] = useState(false)
   const [pendingHotspotPosition, setPendingHotspotPosition] = useState<{yaw: number; pitch: number} | null>(null)
   const [isUploadingScene, setIsUploadingScene] = useState(false)
+  const [infoHotspotDialog, setInfoHotspotDialog] = useState<{
+    isOpen: boolean
+    title: string
+    content: string
+  }>({
+    isOpen: false,
+    title: '',
+    content: ''
+  })
 
   // Load hotspots when active scene changes
   useEffect(() => {
@@ -121,12 +130,15 @@ export function ProjectEditor() {
   }, [activeScene, project])
 
   // Set first scene as active when scenes load
+  // REMOVED: Auto-play first scene
+  /*
   useEffect(() => {
     if (scenes.length > 0 && !activeScene && project) {
       setActiveScene(scenes[0].id)
       loadHotspotsForScene(project, scenes[0].id)
     }
   }, [scenes, activeScene, project])
+  */
 
   const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen)
 
@@ -224,8 +236,36 @@ export function ProjectEditor() {
       // @ts-ignore
       window.ipcRenderer.invoke('open-external-url', hotspot.url)
     } else if (hotspot.type === 'info') {
-      // Could open an info modal here
-      alert(`${hotspot.title}\n\n${hotspot.content}`)
+      setInfoHotspotDialog({
+        isOpen: true,
+        title: hotspot.title || 'Info',
+        content: hotspot.content || ''
+      })
+    }
+  }
+
+  // Handle play project (switch to featured scene)
+  const handlePlayProject = () => {
+    if (!scenes.length) return
+
+    // Find featured scene
+    const featuredScene = scenes.find(s => s.isFeatured)
+    
+    if (featuredScene) {
+      setActiveScene(featuredScene.id)
+      toast({
+        title: "Playing Project",
+        description: `Switched to featured scene: ${featuredScene.name}`,
+        variant: "default",
+      })
+    } else {
+      // Fallback to first scene
+      setActiveScene(scenes[0].id)
+      toast({
+        title: "Playing Project",
+        description: `Switched to start scene: ${scenes[0].name}`,
+        variant: "default",
+      })
     }
   }
 
@@ -258,7 +298,7 @@ export function ProjectEditor() {
 
       {/* Center Content */}
       <main className="editor-main">
-        {currentScene && (
+        {currentScene ? (
           <PanoramaViewer
             scene={currentScene}
             hotspots={hotspots}
@@ -268,6 +308,20 @@ export function ProjectEditor() {
             onSceneHotspotClick={handleSceneHotspotClick}
             onCancelPicking={() => setIsAddingHotspot(false)}
           />
+        ) : (
+          <div className="flex flex-col items-center justify-center w-full h-full bg-[#1a1a1a] text-white">
+            <div className="text-center">
+              <h2 className="text-2xl font-semibold mb-6 text-gray-300">Click to Start Project</h2>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handlePlayProject}
+                className="w-24 h-24 rounded-full bg-white/10 border-2 border-white/50 backdrop-blur-md hover:scale-110 hover:bg-white/20 hover:border-white transition-all duration-300"
+              >
+                <Play className="w-10 h-10 text-white fill-white ml-1" /> 
+              </Button>
+            </div>
+          </div>
         )}
         
         {/* Right Sidebar Toggle Button */}
@@ -283,7 +337,7 @@ export function ProjectEditor() {
 
       {/* Right Sidebar */}
       <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
-        <EditorRightSidebarHeader />
+        <EditorRightSidebarHeader onPlay={handlePlayProject} />
 
         <Accordion type="multiple" defaultValue={["scene-settings", "hotspots"]} className="px-4">
           {/* Scene Settings Section */}
@@ -374,6 +428,8 @@ export function ProjectEditor() {
         setIsAddSceneDialogOpen={setIsAddSceneDialogOpen}
         projectId={project.id}
         onSceneAdded={() => handleSceneAdded(refreshProject)}
+        infoHotspotDialog={infoHotspotDialog}
+        onCloseInfoHotspotDialog={() => setInfoHotspotDialog(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
   )

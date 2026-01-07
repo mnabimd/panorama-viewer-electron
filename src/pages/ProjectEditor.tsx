@@ -15,6 +15,7 @@ import { useHotspots } from "@/hooks/useHotspots"
 import { useScenes } from "@/hooks/useScenes"
 import { useSceneSettings } from "@/hooks/useSceneSettings"
 import { useToast } from "@/hooks/use-toast"
+import { FAKE_SCENE } from "@/constants"
 import "./ProjectEditor.css"
 
 export function ProjectEditor() {
@@ -124,23 +125,14 @@ export function ProjectEditor() {
     content: ''
   })
 
-  // Load hotspots when active scene changes
+  // Load hotspots when active scene changes (but not for fake scene)
   useEffect(() => {
-    if (project && activeScene) {
+    if (project && activeScene && activeScene !== '__fake__') {
       loadHotspotsForScene(project, activeScene)
     }
   }, [activeScene, project])
 
-  // Set first scene as active when scenes load
-  // REMOVED: Auto-play first scene
-  /*
-  useEffect(() => {
-    if (scenes.length > 0 && !activeScene && project) {
-      setActiveScene(scenes[0].id)
-      loadHotspotsForScene(project, scenes[0].id)
-    }
-  }, [scenes, activeScene, project])
-  */
+
 
   const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen)
 
@@ -326,19 +318,23 @@ export function ProjectEditor() {
       />
 
       {/* Center Content */}
-      <main className="editor-main">
-        {currentScene ? (
+      <main className="editor-main relative">
+        {/* Viewer Container - Hidden when fake */}
+        <div className={`w-full h-full ${(!activeScene || activeScene === '__fake__') ? 'invisible' : ''}`}>
           <PanoramaViewer
-            scene={currentScene}
-            hotspots={hotspots}
+            scene={(!activeScene || activeScene === '__fake__') ? FAKE_SCENE : currentScene!}
+            hotspots={(!activeScene || activeScene === '__fake__') ? [] : hotspots}
             isAddingHotspot={isAddingHotspot}
             onHotspotClick={handleHotspotClickInViewer}
             onPanoramaClick={handlePanoramaClick}
             onSceneHotspotClick={handleSceneHotspotClick}
             onCancelPicking={() => setIsAddingHotspot(false)}
           />
-        ) : (
-          <div className="flex flex-col items-center justify-center w-full h-full bg-[#1a1a1a] text-white">
+        </div>
+
+        {/* Play Button Overlay - Visible when fake */}
+        {(!activeScene || activeScene === '__fake__') && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#1a1a1a] text-white">
             <div className="text-center">
               <h2 className="text-2xl font-semibold mb-6 text-gray-300">Click to Start Project</h2>
               <Button 
@@ -366,7 +362,7 @@ export function ProjectEditor() {
 
       {/* Right Sidebar */}
       <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
-        <EditorRightSidebarHeader onPlay={handlePlayProject} />
+        <EditorRightSidebarHeader />
 
         <Accordion type="multiple" defaultValue={["hotspots", "comments"]} className="px-4">
           {/* Scene Settings Section */}

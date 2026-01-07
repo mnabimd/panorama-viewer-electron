@@ -130,7 +130,7 @@ export function EditorLeftSidebar({
             <SceneListItem
               key={scene.id}
               scene={scene}
-              isActive={activeScene === scene.id}
+              isActive={activeScene === scene.id && activeScene !== '__fake__'}
               onSelect={onSceneSelect}
               onToggleVisibility={onToggleSceneVisibility}
             />

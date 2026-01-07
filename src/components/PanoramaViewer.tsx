@@ -306,19 +306,38 @@ export const PanoramaViewer = memo(function PanoramaViewer({
     }
   }, [isVideo]) // Only reinitialize when media type changes (requires different adapter)
 
+  // Store latest markers in ref for access during panorama update
+  const markersRef = useRef(markers)
+  useEffect(() => {
+    markersRef.current = markers
+  }, [markers])
+
   // Update panorama when scene changes
   useEffect(() => {
     if (viewerRef.current && mediaUrl) {
-      try {
-        logMessage('INFO', `Updating panorama for scene: ${scene.id}`)
-        // For videos, pass source object; for images, pass URL directly
-        const panoramaConfig = isVideo ? { source: mediaUrl } : mediaUrl
-        viewerRef.current.setPanorama(panoramaConfig)
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err)
-        logMessage('ERROR', `Failed to update panorama: ${errorMessage}`)
-        console.error('Failed to update panorama:', err)
+      const updatePanorama = async () => {
+        try {
+          logMessage('INFO', `Updating panorama for scene: ${scene.id}`)
+          // For videos, pass source object; for images, pass URL directly
+          const panoramaConfig = isVideo ? { source: mediaUrl } : mediaUrl
+          
+          await viewerRef.current?.setPanorama(panoramaConfig)
+          
+          // Re-apply markers after panorama update to ensure they are visible
+          // This fixes a race condition where markers might be cleared or not shown
+          if (markersPluginRef.current && markersRef.current.length > 0) {
+            logMessage('INFO', `Re-applying ${markersRef.current.length} markers after panorama update`)
+            markersPluginRef.current.clearMarkers()
+            markersPluginRef.current.setMarkers(markersRef.current)
+          }
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : String(err)
+          logMessage('ERROR', `Failed to update panorama: ${errorMessage}`)
+          console.error('Failed to update panorama:', err)
+        }
       }
+
+      updatePanorama()
     }
   }, [mediaUrl, scene.id, isVideo])
 

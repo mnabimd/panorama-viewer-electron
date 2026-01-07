@@ -120,3 +120,10 @@ export function normalizeYaw(yaw: number): number {
 export function clampPitch(pitch: number): number {
   return Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch))
 }
+
+/**
+ * Convert degrees to radians
+ */
+export function degToRad(deg: number): number {
+  return deg * (Math.PI / 180)
+}

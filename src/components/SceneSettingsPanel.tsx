@@ -26,6 +26,7 @@ interface SceneSettingsPanelProps {
   onReplaceImage: () => void
   onDeleteScene: () => void
   onUpdateCoordinates: (longitude: number | undefined, latitude: number | undefined) => void
+  onUpdateSphereCorrection: (sphereCorrection: { pan?: number, tilt?: number, roll?: number }) => void
 }
 
 export function SceneSettingsPanel({
@@ -46,18 +47,21 @@ export function SceneSettingsPanel({
   onToggleAllHotspots,
   onReplaceImage,
   onDeleteScene,
-  onUpdateCoordinates
+  onUpdateCoordinates,
+  onUpdateSphereCorrection
 }: SceneSettingsPanelProps) {
   // Local state for GPS inputs to allow typing
   const [localLongitude, setLocalLongitude] = useState<string>('')
   const [localLatitude, setLocalLatitude] = useState<string>('')
+  const [localPan, setLocalPan] = useState<string>('')
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
   // Update local state when scene changes
   useEffect(() => {
     setLocalLongitude(currentScene?.coordinates?.[0]?.toString() ?? '')
     setLocalLatitude(currentScene?.coordinates?.[1]?.toString() ?? '')
-  }, [currentScene?.id, currentScene?.coordinates])
+    setLocalPan(currentScene?.sphereCorrection?.pan?.toString() ?? '0')
+  }, [currentScene?.id, currentScene?.coordinates, currentScene?.sphereCorrection])
 
   if (!currentScene) {
     return <p className="text-sm text-gray-500">No scene selected</p>
@@ -67,6 +71,13 @@ export function SceneSettingsPanel({
     const lon = localLongitude ? parseFloat(localLongitude) : undefined
     const lat = localLatitude ? parseFloat(localLatitude) : undefined
     onUpdateCoordinates(lon, lat)
+  }
+
+  const handleApplyPan = () => {
+    const pan = parseFloat(localPan)
+    if (!isNaN(pan)) {
+      onUpdateSphereCorrection({ ...currentScene.sphereCorrection, pan })
+    }
   }
 
   return (
@@ -158,7 +169,7 @@ export function SceneSettingsPanel({
         />
       </div>
 
-      {/* Advanced Options (GPS) */}
+      {/* Advanced Options (GPS & Orientation) */}
       <div className="space-y-2 pt-2 border-t border-gray-800">
         <button
           onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
@@ -169,37 +180,63 @@ export function SceneSettingsPanel({
         </button>
 
         {isAdvancedOpen && (
-          <div className="space-y-2 pl-2 animate-in slide-in-from-top-2 duration-200">
-            <Label className="text-xs text-gray-400">GPS Coordinates</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="longitude" className="text-xs text-gray-500">Longitude</Label>
+          <div className="space-y-4 pl-2 animate-in slide-in-from-top-2 duration-200">
+            {/* Scene Orientation */}
+            <div className="space-y-3">
+              <Label className="text-xs text-gray-400">Scene Orientation (Pan)</Label>
+              <div className="flex items-center gap-2">
                 <Input
-                  id="longitude"
                   type="number"
-                  step="any"
-                  value={localLongitude}
-                  onChange={(e) => setLocalLongitude(e.target.value)}
-                  onBlur={handleSaveCoordinates}
-                  placeholder="e.g., -122.4194"
-                  className="bg-[#252525] border-gray-700 text-white text-sm w-[90%]"
+                  value={localPan}
+                  onChange={(e) => setLocalPan(e.target.value)}
+                  placeholder="0"
+                  className="flex-1 bg-[#252525] border-gray-700 text-white text-sm"
                 />
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={handleApplyPan}
+                  className="shrink-0"
+                >
+                  Apply
+                </Button>
               </div>
-              <div>
-                <Label htmlFor="latitude" className="text-xs text-gray-500">Latitude</Label>
-                <Input
-                  id="latitude"
-                  type="number"
-                  step="any"
-                  value={localLatitude}
-                  onChange={(e) => setLocalLatitude(e.target.value)}
-                  onBlur={handleSaveCoordinates}
-                  placeholder="e.g., 37.7749"
-                  className="bg-[#252525] border-gray-700 text-white text-sm w-[90%]"
-                />
-              </div>
+              <p className="text-[10px] text-gray-600">Rotate the sphere to align the view (0-360)</p>
             </div>
-            <p className="text-[10px] text-gray-600">Location for map display</p>
+
+            {/* GPS Coordinates */}
+            <div className="space-y-2 pt-2 border-t border-gray-800">
+              <Label className="text-xs text-gray-400">GPS Coordinates</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="longitude" className="text-xs text-gray-500">Longitude</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    value={localLongitude}
+                    onChange={(e) => setLocalLongitude(e.target.value)}
+                    onBlur={handleSaveCoordinates}
+                    placeholder="e.g., -122.4194"
+                    className="bg-[#252525] border-gray-700 text-white text-sm w-[90%]"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="latitude" className="text-xs text-gray-500">Latitude</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    value={localLatitude}
+                    onChange={(e) => setLocalLatitude(e.target.value)}
+                    onBlur={handleSaveCoordinates}
+                    placeholder="e.g., 37.7749"
+                    className="bg-[#252525] border-gray-700 text-white text-sm w-[90%]"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-600">Location for map display</p>
+            </div>
           </div>
         )}
       </div>

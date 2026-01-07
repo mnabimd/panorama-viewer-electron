@@ -6,7 +6,7 @@ import { PlanPlugin } from '@photo-sphere-viewer/plan-plugin'
 import { VideoPlugin } from '@photo-sphere-viewer/video-plugin'
 import { EquirectangularVideoAdapter } from '@photo-sphere-viewer/equirectangular-video-adapter'
 import { Scene, Hotspot } from '@/types/project.types'
-import { convertHotspotToMarker } from '@/utils/panorama.utils'
+import { convertHotspotToMarker, degToRad } from '@/utils/panorama.utils'
 import { PanoramaPickingOverlay } from './PanoramaPickingOverlay'
 import '@photo-sphere-viewer/core/index.css'
 import '@photo-sphere-viewer/markers-plugin/index.css'
@@ -159,6 +159,16 @@ export const PanoramaViewer = memo(function PanoramaViewer({
     return convertHotspotsToPlanHotspots(hotspots, sceneCoords)
   }, [hotspots, scene.coordinates])
 
+  // Helper to convert sphere correction to radians
+  const getSphereCorrection = (correction?: { pan?: number, tilt?: number, roll?: number }) => {
+    if (!correction) return undefined
+    return {
+      pan: correction.pan ? degToRad(correction.pan) : 0,
+      tilt: correction.tilt ? degToRad(correction.tilt) : 0,
+      roll: correction.roll ? degToRad(correction.roll) : 0,
+    }
+  }
+
   // Initialize viewer on mount
   useEffect(() => {
     if (!containerRef.current) return
@@ -213,10 +223,14 @@ export const PanoramaViewer = memo(function PanoramaViewer({
           adapter: EquirectangularVideoAdapter,
           panorama: {
             source: mediaUrl,
+            sphereCorrection: getSphereCorrection(scene.sphereCorrection)
           },
         } : {
           // For images, use default adapter with panorama URL
-          panorama: mediaUrl,
+          panorama: {
+            source: mediaUrl,
+            sphereCorrection: getSphereCorrection(scene.sphereCorrection)
+          },
         }),
         defaultZoomLvl: 0,
         // Update navbar to include video controls if it's a video
@@ -227,6 +241,7 @@ export const PanoramaViewer = memo(function PanoramaViewer({
         mousewheel: true,
         mousemove: true,
         keyboard: 'fullscreen',
+        sphereCorrection: getSphereCorrection(scene.sphereCorrection),
       })
 
       viewerRef.current = viewer
@@ -319,9 +334,12 @@ export const PanoramaViewer = memo(function PanoramaViewer({
         try {
           logMessage('INFO', `Updating panorama for scene: ${scene.id}`)
           // For videos, pass source object; for images, pass URL directly
-          const panoramaConfig = isVideo ? { source: mediaUrl } : mediaUrl
+          const panoramaSource = isVideo ? { source: mediaUrl } : mediaUrl
+          const panoramaOptions = {
+            sphereCorrection: getSphereCorrection(scene.sphereCorrection)
+          }
           
-          await viewerRef.current?.setPanorama(panoramaConfig)
+          await viewerRef.current?.setPanorama(panoramaSource, panoramaOptions)
           
           // Re-apply markers after panorama update to ensure they are visible
           // This fixes a race condition where markers might be cleared or not shown
@@ -339,7 +357,7 @@ export const PanoramaViewer = memo(function PanoramaViewer({
 
       updatePanorama()
     }
-  }, [mediaUrl, scene.id, isVideo])
+  }, [mediaUrl, scene.id, isVideo, scene.sphereCorrection])
 
   // Update markers when hotspots change
   useEffect(() => {

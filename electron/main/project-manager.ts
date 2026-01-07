@@ -752,6 +752,43 @@ export function setupProjectHandlers() {
     }
   })
 
+  ipcMain.handle('update-scene-sphere-correction', async (_, { projectId, sceneId, sphereCorrection }: { 
+    projectId: string, 
+    sceneId: string,
+    sphereCorrection: { pan?: number, tilt?: number, roll?: number }
+  }) => {
+    try {
+      const PROJECTS_DIR = await getProjectsDir()
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata: ProjectMetadata = JSON.parse(projectJsonContent)
+      
+      // Find the scene
+      const sceneIndex = metadata.scenes.findIndex(s => s.id === sceneId)
+      if (sceneIndex === -1) {
+        throw new Error('Scene not found')
+      }
+      
+      // Update sphere correction
+      metadata.scenes[sceneIndex].sphereCorrection = sphereCorrection
+      
+      metadata.updatedAt = new Date().toISOString()
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(metadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, scene: metadata.scenes[sceneIndex] }
+    } catch (error) {
+      console.error('Failed to update scene sphere correction:', error)
+      throw error
+    }
+  })
+
   ipcMain.handle('replace-scene-image', async (_, { projectId, sceneId, newImagePath, isNewUpload }: { 
     projectId: string, 
     sceneId: string,

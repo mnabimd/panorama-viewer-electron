@@ -221,6 +221,28 @@ export function useSceneSettings({
     }
   }
 
+  // Update sphere correction handler
+  const handleUpdateSphereCorrection = async (sphereCorrection: { pan?: number, tilt?: number, roll?: number }) => {
+    if (!project || !activeScene) return
+
+    try {
+      // @ts-ignore
+      await window.ipcRenderer.invoke('update-scene-sphere-correction', {
+        projectId: project.id,
+        sceneId: activeScene,
+        sphereCorrection
+      })
+      await refreshProject()
+    } catch (error) {
+      console.error('Failed to update scene sphere correction:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update scene orientation",
+        variant: "destructive",
+      })
+    }
+  }
+
   return {
     // State
     currentScene,
@@ -250,6 +272,7 @@ export function useSceneSettings({
     handleConfirmReplaceImage,
     handleDeleteAllScenes,
     handleToggleFeatured,
-    handleUpdateCoordinates
+    handleUpdateCoordinates,
+    handleUpdateSphereCorrection
   }
 }

@@ -51,6 +51,11 @@ export interface Scene {
     dateAdded?: string  // ISO date string when scene was added
   }
   comment?: string // User comments/notes for the scene
+  sphereCorrection?: {
+    pan?: number
+    tilt?: number
+    roll?: number
+  }
 }
 
 // Project interface

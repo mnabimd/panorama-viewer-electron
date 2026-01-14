@@ -185,48 +185,9 @@
   text-overflow: ellipsis;
 }
 
-.stats-section {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
-  margin-top: 0;
-  padding-top: 1rem;
-  border-top: 1px solid #333;
-}
-
-.stat-card {
-  background-color: #252525;
-  border: 1px solid #f97316;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.stat-icon {
-  width: 3rem;
-  height: 3rem;
-  background-color: #eee;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #333;
-}
-
-.stat-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #f97316;
-}
-
-.stat-label {
+.total-projects-label {
   font-size: 0.875rem;
   color: #888;
+  margin-bottom: 1rem;
+  padding-left: 0.25rem;
 }

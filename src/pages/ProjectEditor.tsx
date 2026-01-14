@@ -131,6 +131,7 @@ export function ProjectEditor() {
   const [isPlayMode, setIsPlayMode] = useState(false)
   const panoramaViewerRef = useRef<any>(null)
 
+
   // Menu actions integration
   const menuActions = useMenuActions(project?.id)
 
@@ -292,8 +293,23 @@ export function ProjectEditor() {
     }
   }
 
-  // Handle play project (switch to featured scene and enter panorama fullscreen)
+  // Handle play project (switch to featured scene - used by center Play button)
   const handlePlayProject = () => {
+    if (!scenes.length) return
+
+    // Find featured scene
+    const featuredScene = scenes.find(s => s.isFeatured)
+    
+    if (featuredScene) {
+      setActiveScene(featuredScene.id)
+    } else {
+      // Fallback to first scene
+      setActiveScene(scenes[0].id)
+    }
+  }
+
+  // Handle full play mode (switch to featured scene and enter fullscreen - used by sidebar Play button)
+  const handleFullPlayMode = () => {
     if (!scenes.length) return
 
     // Find featured scene
@@ -391,8 +407,8 @@ export function ProjectEditor() {
         onDeleteAllScenes={() => setDeleteAllScenesConfirmOpen(true)}
         onAddFromGallery={() => setIsAddSceneDialogOpen(true)}
         onImageDrop={handleImageDrop}
-          isUploadingScene={isUploadingScene}
-        />
+        isUploadingScene={isUploadingScene}
+      />
       )}
 
       {/* Center Content */}
@@ -440,21 +456,22 @@ export function ProjectEditor() {
         )}
         
         {/* Right Sidebar Toggle Button - Hidden in play mode */}
-        {!isPlayMode && (<Button 
-          variant="ghost" 
-          size="icon"
-          onClick={toggleRightSidebar}
-          className="absolute top-4 right-4 z-10 bg-[#252525] hover:bg-[#333]"
-        >
-          {rightSidebarOpen ? <ChevronRight /> : <ChevronLeft />}
-        </Button>
+        {!isPlayMode && (
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={toggleRightSidebar}
+            className="absolute top-4 right-4 z-10 bg-[#252525] hover:bg-[#333]"
+          >
+            {rightSidebarOpen ? <ChevronRight /> : <ChevronLeft />}
+          </Button>
         )}
       </main>
 
       {/* Right Sidebar - Hidden in play mode */}
       {!isPlayMode && (
         <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
-          <EditorRightSidebarHeader onPlay={handlePlayProject} />
+          <EditorRightSidebarHeader onPlay={handleFullPlayMode} />
 
         <Accordion type="multiple" defaultValue={["hotspots", "comments"]} className="px-4">
           {/* Scene Settings Section */}

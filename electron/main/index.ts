@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import os from 'node:os'
 import { update } from './update'
-import { setupProjectHandlers } from './project-manager'
+import { setupProjectManager } from './project-manager'
 import { setupLogger, logger } from './logger'
 import { setupSettingsHandlers } from './settings-manager'
 import { createMenu } from './menu'
@@ -108,8 +108,8 @@ async function createWindow() {
   // Auto update
   update(win)
 
-  // Setup project handlers
-  setupProjectHandlers()
+  // Setup project manager
+  setupProjectManager()
   
   // Setup logger
   setupLogger()

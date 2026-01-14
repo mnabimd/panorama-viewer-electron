@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Plus, Settings, Image as ImageIcon, Eye, Share2, Folder } from "lucide-react"
+import { Search, Plus, Settings, Image as ImageIcon } from "lucide-react"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -164,6 +164,11 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
             </button>
           </div>
 
+          {/* Total Projects Label */}
+          <div className="total-projects-label">
+            Total {filteredProjects.length} Project{filteredProjects.length !== 1 ? 's' : ''}
+          </div>
+
           <div className="projects-grid">
             {filteredProjects.map((project) => (
               <ContextMenu key={project.id}>
@@ -219,49 +224,6 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
                 </ContextMenuContent>
               </ContextMenu>
             ))}
-          </div>
-        </div>
-
-        {/* Statistics Section */}
-        <div className="stats-section">
-          <div className="stat-card">
-            <div className="stat-icon">
-              <Folder size={24} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">{projects.length}</span>
-              <span className="stat-label">Total Projects</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">
-              <ImageIcon size={24} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">156</span>
-              <span className="stat-label">360° Images</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">
-              <Eye size={24} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">2.1k</span>
-              <span className="stat-label">Total Views</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">
-              <Share2 size={24} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">12</span>
-              <span className="stat-label">Publish Projects</span>
-            </div>
           </div>
         </div>
       </main>

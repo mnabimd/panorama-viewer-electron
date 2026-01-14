@@ -5,5 +5,7 @@ export default defineConfig({
     root: __dirname,
     include: ['test/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     testTimeout: 1000 * 29,
+    fileParallelism: false, // Run tests sequentially for safety
+    hookTimeout: 30000, // Give enough time for app launch in beforeAll
   },
 })

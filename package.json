@@ -17,7 +17,7 @@
     "build": "tsc && vite build && electron-builder",
     "preview": "vite preview",
     "pretest": "vite build --mode=test",
-    "test": "vitest run",
+    "test": "vitest run --reporter verbose",
     "build:win": "npm run build -- --win"
   },
   "dependencies": {

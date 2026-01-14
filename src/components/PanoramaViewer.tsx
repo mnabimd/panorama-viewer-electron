@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, memo } from 'react'
+import { useEffect, useRef, useMemo, memo, forwardRef, useImperativeHandle } from 'react'
 import { Viewer } from '@photo-sphere-viewer/core'
 import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin'
 import { CompassPlugin } from '@photo-sphere-viewer/compass-plugin'
@@ -104,8 +104,8 @@ const convertHotspotsToPlanHotspots = (hotspots: Hotspot[], sceneCoordinates: [n
   })
 }
 
-// Memoize the component to prevent unnecessary re-renders
-export const PanoramaViewer = memo(function PanoramaViewer({
+// Component with forwardRef
+const PanoramaViewerComponent = forwardRef<any, PanoramaViewerProps>(function PanoramaViewer({
   scene,
   hotspots,
   isAddingHotspot,
@@ -113,7 +113,7 @@ export const PanoramaViewer = memo(function PanoramaViewer({
   onPanoramaClick,
   onSceneHotspotClick,
   onCancelPicking,
-}: PanoramaViewerProps) {
+}, ref) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Viewer | null>(null)
   const markersPluginRef = useRef<MarkersPlugin | null>(null)
@@ -121,6 +121,11 @@ export const PanoramaViewer = memo(function PanoramaViewer({
   const planPluginRef = useRef<PlanPlugin | null>(null)
   const isAddingHotspotRef = useRef(isAddingHotspot)
   const onPanoramaClickRef = useRef(onPanoramaClick)
+
+  // Expose viewer instance to parent via ref
+  useImperativeHandle(ref, () => ({
+    viewer: viewerRef.current
+  }), [])
 
   // Memoize media URL calculation
   const mediaUrl = useMemo(() => {
@@ -440,3 +445,6 @@ export const PanoramaViewer = memo(function PanoramaViewer({
     </div>
   )
 })
+
+// Export memoized version of the component
+export const PanoramaViewer = memo(PanoramaViewerComponent)

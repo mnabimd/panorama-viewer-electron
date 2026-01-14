@@ -56,6 +56,22 @@ export function setupMenuHandlers(): void {
       throw error
     }
   })
+  
+  // Fullscreen Handler
+  ipcMain.handle('toggle-fullscreen', async () => {
+    try {
+      const focusedWindow = BrowserWindow.getFocusedWindow()
+      if (focusedWindow) {
+        const isFullScreen = focusedWindow.isFullScreen()
+        focusedWindow.setFullScreen(!isFullScreen)
+        return { success: true, isFullScreen: !isFullScreen }
+      }
+      return { success: false }
+    } catch (error) {
+      console.error('Failed to toggle fullscreen:', error)
+      throw error
+    }
+  })
 }
 
 /**

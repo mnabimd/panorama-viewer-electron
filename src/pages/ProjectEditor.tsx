@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { ChevronLeft, ChevronRight, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -128,6 +128,8 @@ export function ProjectEditor() {
     content: ''
   })
   const [projectPropertiesOpen, setProjectPropertiesOpen] = useState(false)
+  const [isPlayMode, setIsPlayMode] = useState(false)
+  const panoramaViewerRef = useRef<any>(null)
 
   // Menu actions integration
   const menuActions = useMenuActions(project?.id)
@@ -290,7 +292,7 @@ export function ProjectEditor() {
     }
   }
 
-  // Handle play project (switch to featured scene)
+  // Handle play project (switch to featured scene and enter panorama fullscreen)
   const handlePlayProject = () => {
     if (!scenes.length) return
 
@@ -299,21 +301,43 @@ export function ProjectEditor() {
     
     if (featuredScene) {
       setActiveScene(featuredScene.id)
-      toast({
-        title: "Playing Project",
-        description: `Switched to featured scene: ${featuredScene.name}`,
-        variant: "default",
-      })
     } else {
       // Fallback to first scene
       setActiveScene(scenes[0].id)
-      toast({
-        title: "Playing Project",
-        description: `Switched to start scene: ${scenes[0].name}`,
-        variant: "default",
-      })
+    }
+
+    // Enter play mode
+    setIsPlayMode(true)
+  }
+
+  // Handle stop play mode
+  const handleStopPlay = () => {
+    setIsPlayMode(false)
+    // Exit panorama fullscreen if active
+    if (panoramaViewerRef.current?.viewer) {
+      try {
+        if (document.fullscreenElement) {
+          document.exitFullscreen()
+        }
+      } catch (error) {
+        console.error('Failed to exit fullscreen:', error)
+      }
     }
   }
+
+  // Trigger panorama fullscreen when entering play mode
+  useEffect(() => {
+    if (isPlayMode && panoramaViewerRef.current?.viewer) {
+      // Small delay to ensure viewer is ready
+      setTimeout(() => {
+        try {
+          panoramaViewerRef.current.viewer.enterFullscreen()
+        } catch (error) {
+          console.error('Failed to enter fullscreen:', error)
+        }
+      }, 100)
+    }
+  }, [isPlayMode])
 
   // Handle scene comment update
   const handleUpdateSceneComment = async (comment: string) => {
@@ -348,8 +372,9 @@ export function ProjectEditor() {
 
   return (
     <div className="project-editor">
-      {/* Left Sidebar */}
-      <EditorLeftSidebar
+      {/* Left Sidebar - Hidden in play mode */}
+      {!isPlayMode && (
+        <EditorLeftSidebar
         projectName={projectName}
         isEditingName={isEditingName}
         searchQuery={searchQuery}
@@ -366,8 +391,9 @@ export function ProjectEditor() {
         onDeleteAllScenes={() => setDeleteAllScenesConfirmOpen(true)}
         onAddFromGallery={() => setIsAddSceneDialogOpen(true)}
         onImageDrop={handleImageDrop}
-        isUploadingScene={isUploadingScene}
-      />
+          isUploadingScene={isUploadingScene}
+        />
+      )}
 
       {/* Center Content */}
       <main className="editor-main relative">
@@ -381,6 +407,7 @@ export function ProjectEditor() {
             onPanoramaClick={handlePanoramaClick}
             onSceneHotspotClick={handleSceneHotspotClick}
             onCancelPicking={() => setIsAddingHotspot(false)}
+            ref={panoramaViewerRef}
           />
         </div>
 
@@ -401,8 +428,19 @@ export function ProjectEditor() {
           </div>
         )}
         
-        {/* Right Sidebar Toggle Button */}
-        <Button 
+        {/* Floating Close Button - Visible in play mode */}
+        {isPlayMode && (
+          <Button
+            onClick={handleStopPlay}
+            className="absolute top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white"
+            size="lg"
+          >
+            Close Preview
+          </Button>
+        )}
+        
+        {/* Right Sidebar Toggle Button - Hidden in play mode */}
+        {!isPlayMode && (<Button 
           variant="ghost" 
           size="icon"
           onClick={toggleRightSidebar}
@@ -410,11 +448,13 @@ export function ProjectEditor() {
         >
           {rightSidebarOpen ? <ChevronRight /> : <ChevronLeft />}
         </Button>
+        )}
       </main>
 
-      {/* Right Sidebar */}
-      <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
-        <EditorRightSidebarHeader />
+      {/* Right Sidebar - Hidden in play mode */}
+      {!isPlayMode && (
+        <aside className={`editor-sidebar-right ${!rightSidebarOpen ? 'collapsed' : ''}`}>
+          <EditorRightSidebarHeader onPlay={handlePlayProject} />
 
         <Accordion type="multiple" defaultValue={["hotspots", "comments"]} className="px-4">
           {/* Scene Settings Section */}
@@ -485,6 +525,7 @@ export function ProjectEditor() {
           </AccordionItem>
         </Accordion>
       </aside>
+      )}
 
       {/* All Dialogs */}
       <EditorDialogs

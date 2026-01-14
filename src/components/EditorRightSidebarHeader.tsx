@@ -1,16 +1,17 @@
 import { Button } from "@/components/ui/button"
+import { Play } from "lucide-react"
 
 interface EditorRightSidebarHeaderProps {
-  onPublish?: () => void
+  onPlay?: () => void
 }
 
 export function EditorRightSidebarHeader({
-  onPublish
+  onPlay
 }: EditorRightSidebarHeaderProps) {
   return (
     <div className="right-sidebar-header">
-      <Button className="publish-btn" size="sm" onClick={onPublish}>
-        Publish
+      <Button className="publish-btn" size="sm" onClick={onPlay}>
+        <Play size={16} className="mr-1" /> Play
       </Button>
     </div>
   )

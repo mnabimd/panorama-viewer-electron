@@ -172,4 +172,74 @@ export function setupProjectHandlers() {
       throw error
     }
   })
+
+  // Check category usage
+  ipcMain.handle('check-category-usage', async (_, categoryId: string) => {
+    try {
+      const PROJECTS_DIR = await getProjectsDir()
+      // Ensure projects directory exists
+      await fs.mkdir(PROJECTS_DIR, { recursive: true })
+
+      const entries = await fs.readdir(PROJECTS_DIR, { withFileTypes: true })
+      const projectDirs = entries.filter(entry => entry.isDirectory())
+
+      let count = 0
+      
+      for (const dir of projectDirs) {
+        try {
+          const projectJsonPath = path.join(PROJECTS_DIR, dir.name, 'project.json')
+          const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+          const metadata = JSON.parse(projectJsonContent)
+          
+          if (metadata.category === categoryId) {
+            count++
+          }
+        } catch (e) {
+          // Ignore errors reading individual projects
+        }
+      }
+
+      return { success: true, count }
+    } catch (error) {
+      console.error('Failed to check category usage:', error)
+      throw error
+    }
+  })
+
+  // Update projects category (bulk or single)
+  ipcMain.handle('update-projects-category', async (_, { oldCategoryId, newCategoryId }: { oldCategoryId: string, newCategoryId: string }) => {
+    try {
+      const PROJECTS_DIR = await getProjectsDir()
+      const entries = await fs.readdir(PROJECTS_DIR, { withFileTypes: true })
+      const projectDirs = entries.filter(entry => entry.isDirectory())
+      
+      let updatedCount = 0
+
+      for (const dir of projectDirs) {
+        try {
+          const projectJsonPath = path.join(PROJECTS_DIR, dir.name, 'project.json')
+          const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+          const metadata = JSON.parse(projectJsonContent)
+          
+          if (metadata.category === oldCategoryId) {
+            const updatedMetadata = {
+              ...metadata,
+              category: newCategoryId,
+              updatedAt: new Date().toISOString()
+            }
+            
+            await fs.writeFile(projectJsonPath, JSON.stringify(updatedMetadata, null, 2), 'utf-8')
+            updatedCount++
+          }
+        } catch (e) {
+          console.warn(`Failed to update project in ${dir.name}:`, e)
+        }
+      }
+
+      return { success: true, updatedCount }
+    } catch (error) {
+      console.error('Failed to update projects category:', error)
+      throw error
+    }
+  })
 }

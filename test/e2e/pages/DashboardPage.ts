@@ -41,13 +41,17 @@ export class DashboardPage extends BasePage {
   async deleteProject(name: string) {
     // Right click on project card
     const card = await this.waitFor(`.project-card:has-text("${name}")`)
-    await card.click({ button: 'right' })
+    if (card) {
+      await card.click({ button: 'right' })
+      await this.page.waitForTimeout(500) // Wait for context menu animation
+    }
     
     // Click delete in context menu
-    await this.click('text=Delete')
+    await this.click('[role="menuitem"]:has-text("Delete")')
     
     // Confirm deletion
-    await this.click('button:has-text("Delete")')
+    // Use a more specific selector to avoid clicking the context menu item again if it persists
+    await this.click('button.bg-red-600:has-text("Delete")')
     
     // Wait for card to disappear
     await this.page.waitForSelector(`.project-card:has-text("${name}")`, { state: 'hidden' })
@@ -56,5 +60,28 @@ export class DashboardPage extends BasePage {
   async hasProject(name: string) {
     const cards = await this.page.$$(`.project-card:has-text("${name}")`)
     return cards.length > 0
+  }
+
+  async addCategory(name: string) {
+    await this.click('.add-btn')
+    await this.waitFor('text=Add Category')
+    await this.fill('input#name', name)
+    await this.click('button:has-text("Add Category")')
+    await this.waitFor(`button.filter-btn:has-text("${name}")`)
+  }
+
+  async deleteCategory(name: string) {
+    const categoryBtn = await this.waitFor(`button.filter-btn:has-text("${name}")`)
+    if (categoryBtn) {
+      await categoryBtn.click({ button: 'right' })
+    }
+    await this.click('text=Delete Category')
+    await this.click('button:has-text("Delete")')
+    await this.page.waitForSelector(`button.filter-btn:has-text("${name}")`, { state: 'hidden' })
+  }
+
+  async hasCategory(name: string) {
+    const btns = await this.page.$$(`button.filter-btn:has-text("${name}")`)
+    return btns.length > 0
   }
 }

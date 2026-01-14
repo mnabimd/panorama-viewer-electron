@@ -3,9 +3,23 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 
+// Duplicate from src/constants.ts to avoid import issues in main process
+const PROJECT_CATEGORIES = [
+  { id: 'real-estate', label: 'Real Estate' },
+  { id: 'tourism', label: 'Tourism' },
+  { id: 'education', label: 'Education' },
+  { id: 'events', label: 'Events' },
+  { id: 'other', label: 'Other' },
+] as const;
+
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json')
 const DEFAULT_WORKSPACE = path.join(app.getPath('documents'), 'ABNabi360')
 const MAX_RECENT_WORKSPACES = 5
+
+interface CustomCategory {
+  id: string
+  label: string
+}
 
 interface AppSettings {
   workspacePath: string
@@ -13,6 +27,7 @@ interface AppSettings {
   recentWorkspaces: string[]
   galleryViewMode?: 'grid' | 'list'  // Gallery view mode preference (default: grid)
   lastUpdatedAt: string
+  customCategories: CustomCategory[]
 }
 
 interface WorkspaceInfo {
@@ -36,7 +51,8 @@ function getDefaultSettings(): AppSettings {
     photoCompressionEnabled: false,
     recentWorkspaces: [],
     galleryViewMode: 'grid',
-    lastUpdatedAt: new Date().toISOString()
+    lastUpdatedAt: new Date().toISOString(),
+    customCategories: []
   }
 }
 
@@ -313,6 +329,59 @@ export function setupSettingsHandlers() {
       return { success: true, settings: updatedSettings }
     } catch (error) {
       console.error('Failed to set gallery view mode:', error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }
+    }
+  })
+
+  // Add custom category
+  ipcMain.handle('add-custom-category', async (_, label: string) => {
+    try {
+      const settings = await getAppSettings()
+      const id = label.toLowerCase().replace(/\s+/g, '-')
+      
+      // Check if exists in defaults
+      if (PROJECT_CATEGORIES.some(c => c.id === id)) {
+        return { success: false, error: 'Category already exists in defaults' }
+      }
+      
+      // Check if exists in custom
+      if (settings.customCategories.some(c => c.id === id)) {
+        return { success: false, error: 'Category already exists' }
+      }
+
+      const updatedSettings: AppSettings = {
+        ...settings,
+        customCategories: [...settings.customCategories, { id, label }]
+      }
+
+      await saveSettings(updatedSettings)
+      return { success: true, settings: updatedSettings }
+    } catch (error) {
+      console.error('Failed to add custom category:', error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }
+    }
+  })
+
+  // Remove custom category
+  ipcMain.handle('remove-custom-category', async (_, categoryId: string) => {
+    try {
+      const settings = await getAppSettings()
+      
+      const updatedSettings: AppSettings = {
+        ...settings,
+        customCategories: settings.customCategories.filter(c => c.id !== categoryId)
+      }
+
+      await saveSettings(updatedSettings)
+      return { success: true, settings: updatedSettings }
+    } catch (error) {
+      console.error('Failed to remove custom category:', error)
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 

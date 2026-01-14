@@ -19,9 +19,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { useMenuActions } from "@/hooks/useMenuActions"
-import { PROJECT_CATEGORIES } from "@/constants"
+import { useCategories, Category } from "@/hooks/useCategories"
 import { SettingsDialog } from "@/components/SettingsDialog"
 import "./Dashboard.css"
 
@@ -48,6 +56,14 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
   const [searchQuery, setSearchQuery] = useState("")
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  
+  // Category management states
+  const { categories, addCategory, removeCategory, checkCategoryUsage, migrateProjectsCategory } = useCategories()
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
+  const [categoryUsageCount, setCategoryUsageCount] = useState(0)
+  const [isDeleteCategoryDialogOpen, setIsDeleteCategoryDialogOpen] = useState(false)
 
   // Initialize menu actions (without projectId since we're on Dashboard)
   useMenuActions()
@@ -104,6 +120,75 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
     }
   }
 
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return
+
+    const result = await addCategory(newCategoryName)
+    if (result.success) {
+      toast({
+        title: "Category added",
+        description: `Category "${newCategoryName}" has been added.`,
+        variant: "success",
+      })
+      setIsAddCategoryOpen(false)
+      setNewCategoryName("")
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to add category",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const initiateDeleteCategory = async (category: Category) => {
+    const count = await checkCategoryUsage(category.id)
+    setCategoryToDelete(category)
+    setCategoryUsageCount(count)
+    setIsDeleteCategoryDialogOpen(true)
+  }
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return
+
+    try {
+      if (categoryUsageCount > 0) {
+        // Migrate projects to 'other'
+        await migrateProjectsCategory(categoryToDelete.id, 'other')
+      }
+
+      const result = await removeCategory(categoryToDelete.id)
+      if (result.success) {
+        toast({
+          title: "Category deleted",
+          description: `Category "${categoryToDelete.label}" has been deleted.`,
+        })
+        // Reset filter if we were on the deleted category
+        if (filter === categoryToDelete.id) {
+          setFilter('all')
+        }
+        // Refresh projects to reflect migration
+        onRefresh()
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to delete category",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Failed to delete category:', error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleteCategoryDialogOpen(false)
+      setCategoryToDelete(null)
+    }
+  }
+
   return (
     <div className="dashboard">
       {/* Header */}
@@ -150,16 +235,37 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
             >
               All
             </button>
-            {PROJECT_CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                className={`filter-btn ${filter === cat.id ? 'active' : ''}`}
-                onClick={() => setFilter(cat.id)}
-              >
-                {cat.label}
-              </button>
+            {categories.map((cat) => (
+              cat.isCustom ? (
+                <ContextMenu key={cat.id}>
+                  <ContextMenuTrigger>
+                    <button
+                      className={`filter-btn ${filter === cat.id ? 'active' : ''}`}
+                      onClick={() => setFilter(cat.id)}
+                    >
+                      {cat.label}
+                    </button>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem 
+                      className="text-red-600 focus:text-red-600 focus:bg-red-100"
+                      onClick={() => initiateDeleteCategory(cat)}
+                    >
+                      Delete Category
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              ) : (
+                <button
+                  key={cat.id}
+                  className={`filter-btn ${filter === cat.id ? 'active' : ''}`}
+                  onClick={() => setFilter(cat.id)}
+                >
+                  {cat.label}
+                </button>
+              )
             ))}
-            <button className="add-btn" onClick={onNewProject}>
+            <button className="add-btn" onClick={() => setIsAddCategoryOpen(true)}>
               <Plus size={16} />
             </button>
           </div>
@@ -241,6 +347,59 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteProject}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Category Dialog */}
+      <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Category</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className="col-span-3"
+                placeholder="Category Name"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleAddCategory}>Add Category</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Category Confirmation Dialog */}
+      <AlertDialog open={isDeleteCategoryDialogOpen} onOpenChange={setIsDeleteCategoryDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the category "{categoryToDelete?.label}"?
+              {categoryUsageCount > 0 && (
+                <div className="mt-2 text-amber-500 font-medium">
+                  Warning: This category is used by {categoryUsageCount} project{categoryUsageCount !== 1 ? 's' : ''}.
+                  These projects will be moved to the "Other" category.
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteCategory}
               className="bg-red-600 hover:bg-red-700"
             >
               Delete

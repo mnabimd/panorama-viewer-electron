@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { useCategories } from '@/hooks/useCategories'
 
 interface ProjectPropertiesDialogProps {
   open: boolean
@@ -41,6 +42,7 @@ export function ProjectPropertiesDialog({
   const [editedName, setEditedName] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const { categories } = useCategories()
 
   useEffect(() => {
     if (open && projectId) {
@@ -155,7 +157,9 @@ export function ProjectPropertiesDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Category</Label>
-                <div className="text-sm">{projectData.category || 'No category'}</div>
+                <div className="text-sm">
+                  {categories.find(c => c.id === projectData.category)?.label || projectData.category || 'No category'}
+                </div>
               </div>
 
               <div className="space-y-2">

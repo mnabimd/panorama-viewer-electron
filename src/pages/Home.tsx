@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select"
 import { Search, Plus, Settings } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { PROJECT_CATEGORIES } from "@/constants"
+import { useCategories } from "@/hooks/useCategories"
 import { SettingsDialog } from "@/components/SettingsDialog"
 import "./Home.css"
 
@@ -33,6 +33,7 @@ export function Home() {
   const [category, setCategory] = useState("real-estate")
   const [titleError, setTitleError] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const { categories } = useCategories()
 
   const handleWorkspaceChanged = () => {
     // Refresh projects when workspace changes
@@ -168,7 +169,7 @@ export function Home() {
                     <SelectValue placeholder="" />
                   </SelectTrigger>
                   <SelectContent className="select-content">
-                    {PROJECT_CATEGORIES.map((cat) => (
+                    {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.label}
                       </SelectItem>
@@ -293,7 +294,7 @@ export function Home() {
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent className="select-content">
-                  {PROJECT_CATEGORIES.map((cat) => (
+                  {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.label}
                     </SelectItem>

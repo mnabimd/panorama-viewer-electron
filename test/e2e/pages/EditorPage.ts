@@ -519,4 +519,63 @@ export class EditorPage extends BasePage {
     await this.page.waitForSelector(`.hotspot-item:has-text("${name}")`, { state: 'hidden', timeout: 5000 })
     console.log(`✓ Hotspot "${name}" deleted`)
   }
+
+  // --- Player Mode ---
+
+  async enterPlayMode() {
+    console.log('Entering Player/Preview Mode...')
+    
+    // Click the Play button in the right sidebar header
+    // It has text "Play" and class "publish-btn"
+    await this.click('button:has-text("Play")')
+    
+    // Wait for Close Preview button to appear
+    await this.waitFor('button:has-text("Close Preview")')
+    await this.wait(500) // Animation buffer
+    console.log('✓ Entered Player Mode')
+  }
+
+  async exitPlayMode() {
+    console.log('Exiting Player/Preview Mode...')
+    
+    // Click Close Preview button
+    await this.click('button:has-text("Close Preview")')
+    
+    // Wait for Play button to reappear
+    await this.waitFor('button:has-text("Play")')
+    await this.wait(500) // Animation buffer
+    console.log('✓ Exited Player Mode')
+  }
+
+  async verifyPlayerMode(isActive: boolean) {
+    console.log(`Verifying Player Mode is ${isActive ? 'ACTIVE' : 'INACTIVE'}...`)
+    
+    if (isActive) {
+      // 1. Close Preview button should be visible
+      const closeBtn = await this.page.locator('button:has-text("Close Preview")').isVisible()
+      if (!closeBtn) throw new Error('Player Mode: Close Preview button missing')
+      
+      // 2. Sidebars should be hidden
+      // Right sidebar
+      const rightSidebar = await this.page.locator('.editor-sidebar-right').isVisible()
+      if (rightSidebar) throw new Error('Player Mode: Right sidebar should be hidden')
+      
+      // Left sidebar (check for project name input or back button)
+      const backBtn = await this.page.locator('.back-btn').isVisible()
+      if (backBtn) throw new Error('Player Mode: Left sidebar (back button) should be hidden')
+      
+    } else {
+      // 1. Close Preview button should be hidden
+      const closeBtn = await this.page.locator('button:has-text("Close Preview")').isVisible()
+      if (closeBtn) throw new Error('Editor Mode: Close Preview button should be hidden')
+      
+      // 2. Sidebars should be visible
+      const rightSidebar = await this.page.locator('.editor-sidebar-right').isVisible()
+      if (!rightSidebar) throw new Error('Editor Mode: Right sidebar should be visible')
+      
+      const backBtn = await this.page.locator('.back-btn').isVisible()
+      if (!backBtn) throw new Error('Editor Mode: Left sidebar should be visible')
+    }
+    console.log(`✓ Player Mode state verified: ${isActive}`)
+  }
 }

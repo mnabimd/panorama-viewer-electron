@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
+import { useMenuActions } from "@/hooks/useMenuActions"
 import { PROJECT_CATEGORIES } from "@/constants"
 import { SettingsDialog } from "@/components/SettingsDialog"
 import "./Dashboard.css"
@@ -47,6 +48,21 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
   const [searchQuery, setSearchQuery] = useState("")
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // Initialize menu actions (without projectId since we're on Dashboard)
+  useMenuActions()
+
+  // Listen for menu-triggered new project event
+  useEffect(() => {
+    const handleNewProjectEvent = () => {
+      onNewProject()
+    }
+
+    window.addEventListener('open-new-project-dialog', handleNewProjectEvent)
+    return () => {
+      window.removeEventListener('open-new-project-dialog', handleNewProjectEvent)
+    }
+  }, [onNewProject])
 
   const handleWorkspaceChanged = () => {
     // Refresh projects when workspace changes

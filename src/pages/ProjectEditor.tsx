@@ -10,11 +10,13 @@ import { SceneCommentsPanel } from "@/components/SceneCommentsPanel"
 import { HotspotsPanel } from "@/components/HotspotsPanel"
 import { EditorDialogs } from "@/components/EditorDialogs"
 import { PanoramaViewer } from "@/components/PanoramaViewer"
+import { ProjectPropertiesDialog } from "@/components/ProjectPropertiesDialog"
 import { useProject } from "@/hooks/useProject"
 import { useHotspots } from "@/hooks/useHotspots"
 import { useScenes } from "@/hooks/useScenes"
 import { useSceneSettings } from "@/hooks/useSceneSettings"
 import { useToast } from "@/hooks/use-toast"
+import { useMenuActions } from "@/hooks/useMenuActions"
 import { FAKE_SCENE } from "@/constants"
 import "./ProjectEditor.css"
 
@@ -125,6 +127,15 @@ export function ProjectEditor() {
     title: '',
     content: ''
   })
+  const [projectPropertiesOpen, setProjectPropertiesOpen] = useState(false)
+
+  // Menu actions integration
+  const menuActions = useMenuActions(project?.id)
+
+  // Override sidebar state with menu actions
+  useEffect(() => {
+    setRightSidebarOpen(menuActions.sidebarVisible)
+  }, [menuActions.sidebarVisible])
 
   // Load hotspots when active scene changes (but not for fake scene)
   useEffect(() => {
@@ -132,6 +143,46 @@ export function ProjectEditor() {
       loadHotspotsForScene(project, activeScene)
     }
   }, [activeScene, project])
+
+  // Setup menu action event listeners
+  useEffect(() => {
+    const handleImportScenes = async (event: any) => {
+      const { filePaths } = event.detail
+      for (const filePath of filePaths) {
+        await handleImageDrop(filePath)
+      }
+    }
+
+    const handlePreview = () => {
+      handlePlayProject()
+    }
+
+    const handleProperties = () => {
+      setProjectPropertiesOpen(true)
+    }
+
+    const handleSaveProject = async () => {
+      // Refresh project to ensure data is current
+      await refreshProject()
+      toast({
+        title: 'Project Saved',
+        description: 'All changes have been saved',
+        variant: 'default'
+      })
+    }
+
+    window.addEventListener('import-scenes', handleImportScenes as EventListener)
+    window.addEventListener('preview-mode', handlePreview)
+    window.addEventListener('open-project-properties', handleProperties)
+    window.addEventListener('save-project', handleSaveProject)
+
+    return () => {
+      window.removeEventListener('import-scenes', handleImportScenes as EventListener)
+      window.removeEventListener('preview-mode', handlePreview)
+      window.removeEventListener('open-project-properties', handleProperties)
+      window.removeEventListener('save-project', handleSaveProject)
+    }
+  }, [project, refreshProject, toast])
 
 
 
@@ -475,6 +526,15 @@ export function ProjectEditor() {
         infoHotspotDialog={infoHotspotDialog}
         onCloseInfoHotspotDialog={() => setInfoHotspotDialog(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* Project Properties Dialog */}
+      {project && (
+        <ProjectPropertiesDialog
+          open={projectPropertiesOpen}
+          onClose={() => setProjectPropertiesOpen(false)}
+          projectId={project.id}
+        />
+      )}
     </div>
   )
 }

@@ -7,6 +7,8 @@ import { update } from './update'
 import { setupProjectHandlers } from './project-manager'
 import { setupLogger, logger } from './logger'
 import { setupSettingsHandlers } from './settings-manager'
+import { createMenu } from './menu'
+import { setupMenuHandlers } from './menu-handlers'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -114,6 +116,12 @@ async function createWindow() {
   
   // Setup settings handlers
   setupSettingsHandlers()
+  
+  // Setup menu handlers
+  setupMenuHandlers()
+  
+  // Create application menu
+  createMenu(win)
 }
 
 app.whenReady().then(() => {

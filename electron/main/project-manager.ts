@@ -344,6 +344,34 @@ export function setupProjectHandlers() {
     }
   })
 
+  ipcMain.handle('update-project-description', async (_, { projectId, description }: { projectId: string, description: string }) => {
+    try {
+      const PROJECTS_DIR = await getProjectsDir()
+      const projectPath = path.join(PROJECTS_DIR, projectId)
+      const projectJsonPath = path.join(projectPath, 'project.json')
+      
+      const projectJsonContent = await fs.readFile(projectJsonPath, 'utf-8')
+      const metadata = JSON.parse(projectJsonContent)
+      
+      const updatedMetadata = {
+        ...metadata,
+        description: description,
+        updatedAt: new Date().toISOString()
+      }
+      
+      await fs.writeFile(
+        projectJsonPath,
+        JSON.stringify(updatedMetadata, null, 2),
+        'utf-8'
+      )
+      
+      return { success: true, project: updatedMetadata }
+    } catch (error) {
+      console.error('Failed to update project description:', error)
+      throw error
+    }
+  })
+
   ipcMain.handle('add-hotspot', async (_, { projectId, sceneId, hotspotData }: { 
     projectId: string, 
     sceneId: string, 

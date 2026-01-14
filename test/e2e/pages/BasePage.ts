@@ -7,8 +7,9 @@ export class BasePage {
     this.page = page
   }
 
-  async waitFor(selector: string, timeout = 10000) {
-    return this.page.waitForSelector(selector, { timeout })
+  async waitFor(selector: string, optionsOrTimeout: number | { state?: 'attached' | 'detached' | 'visible' | 'hidden', timeout?: number } = 10000) {
+    const options = typeof optionsOrTimeout === 'number' ? { timeout: optionsOrTimeout } : optionsOrTimeout
+    return this.page.waitForSelector(selector, options)
   }
 
   async click(selector: string) {

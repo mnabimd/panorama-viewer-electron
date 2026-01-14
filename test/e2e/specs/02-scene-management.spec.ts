@@ -45,7 +45,31 @@ describe('Scene Management', () => {
     await editorPage.renameScene(SCENE_NAME_DEFAULT, SCENE_NAME_RENAMED)
   })
 
+  test('should toggle scene visibility', async () => {
+    await editorPage.toggleSceneVisibility(SCENE_NAME_RENAMED, false)
+    await editorPage.toggleSceneVisibility(SCENE_NAME_RENAMED, true)
+  })
+
+  test('should set as featured scene', async () => {
+    await editorPage.setFeaturedScene(SCENE_NAME_RENAMED)
+  })
+
+  test('should set scene orientation', async () => {
+    await editorPage.setSceneOrientation(SCENE_NAME_RENAMED, 20)
+  })
+
+  test('should add comment', async () => {
+    await editorPage.addSceneComment(SCENE_NAME_RENAMED, 'This is a test comment')
+  })
+
   test('should delete the scene', async () => {
     await editorPage.deleteScene(SCENE_NAME_RENAMED)
+  })
+
+  test('should delete the project', async () => {
+    await page.reload()
+    await editorPage.wait(2000)
+    await editorPage.navigateToDashboard()
+    await dashboardPage.deleteProject(PROJECT_NAME)
   })
 })

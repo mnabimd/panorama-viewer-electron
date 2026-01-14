@@ -153,4 +153,109 @@ export class EditorPage extends BasePage {
     // 5. Verify scene is gone
     await this.page.waitForSelector(`.scene-item:has-text("${name}")`, { state: 'hidden' })
   }
+
+  async toggleSceneVisibility(name: string, shouldBeVisible: boolean) {
+    await this.selectScene(name)
+    
+    // Check if visibility toggle in sidebar matches expectation
+    // The eye icon logic is a bit complex to check via class, but we can check the switch in settings
+    
+    // Open Scene Settings
+    const accordionTrigger = await this.page.locator('button:has-text("Scene Settings")')
+    if (await accordionTrigger.getAttribute('aria-expanded') !== 'true') {
+      await accordionTrigger.click()
+      await this.wait(500)
+    }
+
+    // Find the switch for "Show Scene"
+    // It's the first switch in the panel usually, or we can find by label
+    // Label "Show Scene" is followed by a Switch
+    const switchEl = await this.page.locator('button[role="switch"]').first() // Assuming first switch is visibility
+    const isChecked = await switchEl.getAttribute('aria-checked') === 'true'
+    
+    if (isChecked !== shouldBeVisible) {
+      await switchEl.click()
+      await this.wait(500) // Wait for update
+    }
+  }
+
+  async setFeaturedScene(name: string) {
+    await this.selectScene(name)
+    
+    // Open Scene Settings
+    const accordionTrigger = await this.page.locator('button:has-text("Scene Settings")')
+    if (await accordionTrigger.getAttribute('aria-expanded') !== 'true') {
+      await accordionTrigger.click()
+      await this.wait(500)
+    }
+
+    // Find "Featured Scene" switch
+    // It's likely the second switch, or we can look for the label
+    // Using a more robust selector:
+    const featuredSwitch = await this.page.locator('div:has-text("Featured Scene") + div button[role="switch"]')
+    // Or if structure is different:
+    // <div ...><Label>Featured Scene</Label>...<Switch>
+    // Let's try finding the switch inside the container that has "Featured Scene" text
+    // But the text is in a sibling or parent.
+    // Let's use the order if labels are consistent.
+    // 1. Show Scene
+    // 2. Featured Scene
+    // 3. Show All Hotspots
+    
+    const switches = await this.page.locator('button[role="switch"]').all()
+    if (switches.length >= 2) {
+      const isChecked = await switches[1].getAttribute('aria-checked') === 'true'
+      if (!isChecked) {
+        await switches[1].click()
+        await this.wait(500)
+      }
+    }
+  }
+
+  async setSceneOrientation(name: string, pan: number) {
+    await this.selectScene(name)
+    
+    // Open Scene Settings
+    const accordionTrigger = await this.page.locator('button:has-text("Scene Settings")')
+    if (await accordionTrigger.getAttribute('aria-expanded') !== 'true') {
+      await accordionTrigger.click()
+      await this.wait(500)
+    }
+
+    // Open Advanced Options
+    const advancedBtn = await this.page.locator('button:has-text("Advanced Options")')
+    // Check if already open? It renders content if open.
+    // If "Scene Orientation" label is visible, it's open.
+    if (!(await this.page.isVisible('text=Scene Orientation'))) {
+      await advancedBtn.click()
+      await this.wait(500)
+    }
+
+    // Set Pan
+    // Input type number
+    const panInput = await this.page.locator('input[placeholder="0"]')
+    await panInput.fill(pan.toString())
+    
+    // Click Apply
+    await this.click('button:has-text("Apply")')
+    await this.wait(500)
+  }
+
+  async addSceneComment(name: string, comment: string) {
+    await this.selectScene(name)
+    
+    // Open Comments accordion
+    const accordionTrigger = await this.page.locator('button:has-text("Comments")')
+    if (await accordionTrigger.getAttribute('aria-expanded') !== 'true') {
+      await accordionTrigger.click()
+      await this.wait(500)
+    }
+
+    // Fill textarea
+    await this.fill('textarea[placeholder*="Add notes"]', comment)
+    
+    // Trigger blur to save (click outside, e.g. on the accordion trigger)
+    await accordionTrigger.click()
+    await this.wait(500)
+  }
 }

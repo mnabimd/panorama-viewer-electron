@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Plus, Settings, Image as ImageIcon } from "lucide-react"
+import { Search, Plus, Settings, Image as ImageIcon, Upload, Download } from "lucide-react"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useMenuActions } from "@/hooks/useMenuActions"
 import { useCategories, Category } from "@/hooks/useCategories"
 import { SettingsDialog } from "@/components/SettingsDialog"
+import { BackupProgressDialog } from "@/components/BackupProgressDialog"
 import "./Dashboard.css"
 
 interface Project {
@@ -64,21 +65,28 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
   const [categoryUsageCount, setCategoryUsageCount] = useState(0)
   const [isDeleteCategoryDialogOpen, setIsDeleteCategoryDialogOpen] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   // Initialize menu actions (without projectId since we're on Dashboard)
-  useMenuActions()
+  const { handleImportProject } = useMenuActions()
 
-  // Listen for menu-triggered new project event
+  // Listen for menu-triggered new project event and project import
   useEffect(() => {
     const handleNewProjectEvent = () => {
       onNewProject()
     }
 
+    const handleProjectImported = () => {
+      onRefresh()
+    }
+
     window.addEventListener('open-new-project-dialog', handleNewProjectEvent)
+    window.addEventListener('project-imported', handleProjectImported)
     return () => {
       window.removeEventListener('open-new-project-dialog', handleNewProjectEvent)
+      window.removeEventListener('project-imported', handleProjectImported)
     }
-  }, [onNewProject])
+  }, [onNewProject, onRefresh])
 
   const handleWorkspaceChanged = () => {
     // Refresh projects when workspace changes
@@ -189,6 +197,32 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
     }
   }
 
+  const handleExportProject = async (project: Project) => {
+    setIsExporting(true)
+    try {
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('export-project', project.id)
+      if (result.success) {
+        toast({
+          title: "Project exported",
+          description: `Project exported to ${result.filePath}`,
+          variant: "success",
+        })
+      } else if (!result.canceled) {
+        throw new Error('Export failed')
+      }
+    } catch (error) {
+      console.error('Failed to export project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to export project.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="dashboard">
       {/* Header */}
@@ -206,6 +240,14 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+
+          <Button 
+            onClick={handleImportProject}
+            variant="outline"
+            className="mr-2"
+          >
+            <Upload size={18} className="mr-2" /> Import
+          </Button>
 
           <Button 
             onClick={onNewProject}
@@ -321,6 +363,9 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
                 <ContextMenuContent>
                   <ContextMenuItem>Open</ContextMenuItem>
                   <ContextMenuItem>View Info</ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleExportProject(project)}>
+                    Export
+                  </ContextMenuItem>
                   <ContextMenuItem 
                     className="text-red-600 focus:text-red-600 focus:bg-red-100"
                     onClick={() => setProjectToDelete(project)}
@@ -413,6 +458,8 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
         onOpenChange={setSettingsOpen}
         onWorkspaceChanged={handleWorkspaceChanged}
       />
+
+      <BackupProgressDialog open={isExporting} onOpenChange={() => {}} />
     </div>
   )
 }

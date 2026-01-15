@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from './use-toast'
 
@@ -13,6 +13,8 @@ export function useMenuActions(projectId?: string) {
   const [state, setState] = useState<MenuActionsState>({
     sidebarVisible: true
   })
+
+  const [isExporting, setIsExporting] = useState(false)
 
   // Toggle handlers
   const toggleSidebar = useCallback(() => {
@@ -73,7 +75,39 @@ if (!projectId) {
     }
   }, [projectId, toast])
 
-  const handleExportProject = useCallback(async (projectName: string) => {
+  const isImportingRef = useRef(false)
+
+  const handleImportProject = useCallback(async () => {
+    if (isImportingRef.current) return
+    
+    isImportingRef.current = true
+    try {
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('import-project')
+      if (result.success) {
+        toast({
+          title: "Project imported",
+          description: "Project imported successfully.",
+          variant: "success",
+        })
+        // Dispatch event for Dashboard to refresh
+        window.dispatchEvent(new CustomEvent('project-imported'))
+      } else if (!result.canceled) {
+        throw new Error('Import failed')
+      }
+    } catch (error) {
+      console.error('Failed to import project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to import project.",
+        variant: "destructive",
+      })
+    } finally {
+      isImportingRef.current = false
+    }
+  }, [toast])
+
+  const handleExportProject = useCallback(async () => {
     if (!projectId) {
       toast({
         title: 'No Project Open',
@@ -83,16 +117,18 @@ if (!projectId) {
       return
     }
     
+    setIsExporting(true)
     try {
-      const result = await window.ipcRenderer.invoke('menu:export-project-dialog', { 
-        projectId, 
-        projectName 
-      })
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('export-project', projectId)
       if (result.success) {
         toast({
           title: 'Export Successful',
-          description: `Project exported to ${result.exportPath}`
+          description: `Project exported to ${result.filePath}`,
+          variant: 'success'
         })
+      } else if (!result.canceled) {
+        throw new Error('Export failed')
       }
     } catch (error) {
       console.error('Failed to export project:', error)
@@ -101,6 +137,8 @@ if (!projectId) {
         description: 'Failed to export project',
         variant: 'destructive'
       })
+    } finally {
+      setIsExporting(false)
     }
   }, [projectId, toast])
 
@@ -140,6 +178,7 @@ if (!projectId) {
     ipcRenderer.on('menu:new-project', handleNewProject)
     ipcRenderer.on('menu:save-project', handleSaveProject)
     ipcRenderer.on('menu:import-scenes', handleImportScenes)
+    ipcRenderer.on('menu:export-project', handleExportProject)
     
     // Project menu listeners
     ipcRenderer.on('menu:preview-mode', handlePreviewMode)
@@ -158,6 +197,7 @@ if (!projectId) {
       ipcRenderer.off('menu:new-project', handleNewProject)
       ipcRenderer.off('menu:save-project', handleSaveProject)
       ipcRenderer.off('menu:import-scenes', handleImportScenes)
+      ipcRenderer.off('menu:export-project', handleExportProject)
       ipcRenderer.off('menu:preview-mode', handlePreviewMode)
       ipcRenderer.off('menu:project-properties', handleProjectProperties)
     }
@@ -166,6 +206,8 @@ if (!projectId) {
     handleNewProject,
     handleSaveProject,
     handleImportScenes,
+    handleImportProject,
+    handleExportProject,
     handlePreviewMode,
     handleProjectProperties,
     toast
@@ -177,8 +219,10 @@ if (!projectId) {
     handleNewProject,
     handleSaveProject,
     handleImportScenes,
+    handleImportProject,
     handleExportProject,
     handlePreviewMode,
-    handleProjectProperties
+    handleProjectProperties,
+    isExporting
   }
 }

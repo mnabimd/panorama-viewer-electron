@@ -17,9 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, Plus, Settings } from "lucide-react"
+import { Search, Plus, Settings, Upload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useCategories } from "@/hooks/useCategories"
+import { useMenuActions } from "@/hooks/useMenuActions"
 import { SettingsDialog } from "@/components/SettingsDialog"
 import "./Home.css"
 
@@ -34,6 +35,9 @@ export function Home() {
   const [titleError, setTitleError] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { categories } = useCategories()
+  
+  // Initialize menu actions
+  const { handleImportProject } = useMenuActions()
 
   const handleWorkspaceChanged = () => {
     // Refresh projects when workspace changes
@@ -208,6 +212,15 @@ export function Home() {
               className="search-input"
             />
           </div>
+
+          {/* Import Button */}
+          <Button 
+            onClick={handleImportProject}
+            variant="outline"
+            className="mr-2"
+          >
+            <Upload size={18} className="mr-2" /> Import
+          </Button>
 
           {/* New Project Button */}
           <Button 

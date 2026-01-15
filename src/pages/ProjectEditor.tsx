@@ -11,6 +11,7 @@ import { HotspotsPanel } from "@/components/HotspotsPanel"
 import { EditorDialogs } from "@/components/EditorDialogs"
 import { PanoramaViewer } from "@/components/PanoramaViewer"
 import { ProjectPropertiesDialog } from "@/components/ProjectPropertiesDialog"
+import { BackupProgressDialog } from "@/components/BackupProgressDialog"
 import { useProject } from "@/hooks/useProject"
 import { useHotspots } from "@/hooks/useHotspots"
 import { useScenes } from "@/hooks/useScenes"
@@ -593,6 +594,8 @@ export function ProjectEditor() {
           projectId={project.id}
         />
       )}
+
+      <BackupProgressDialog open={menuActions.isExporting} onOpenChange={() => {}} />
     </div>
   )
 }

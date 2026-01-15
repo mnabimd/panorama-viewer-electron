@@ -46,16 +46,8 @@ export function createMenu(mainWindow: BrowserWindow): void {
         {
           label: 'Export Project',
           accelerator: 'CmdOrCtrl+E',
-          enabled: false, // Disabled as per user request
           click: () => {
             mainWindow.webContents.send('menu:export-project')
-          }
-        },
-        {
-          label: 'Export as Zip',
-          enabled: false, // Placeholder for future implementation
-          click: () => {
-            // To be implemented
           }
         },
         {

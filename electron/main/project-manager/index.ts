@@ -7,6 +7,7 @@ import { setupProjectHandlers } from './project-handlers'
 import { setupSceneHandlers } from './scene-handlers'
 import { setupHotspotHandlers } from './hotspot-handlers'
 import { setupUtilityHandlers } from './utility-handlers'
+import { setupBackupHandlers } from './backup-handlers'
 
 /**
  * Setup all project manager handlers
@@ -17,6 +18,7 @@ export function setupProjectManager() {
   setupSceneHandlers()
   setupHotspotHandlers()
   setupUtilityHandlers()
+  setupBackupHandlers()
 }
 
 // Re-export types for use in other modules

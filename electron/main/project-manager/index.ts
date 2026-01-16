@@ -8,6 +8,7 @@ import { setupSceneHandlers } from './scene-handlers'
 import { setupHotspotHandlers } from './hotspot-handlers'
 import { setupUtilityHandlers } from './utility-handlers'
 import { setupBackupHandlers } from './backup-handlers'
+import { registerWebExportHandlers } from './web-export-handlers'
 
 /**
  * Setup all project manager handlers
@@ -19,6 +20,7 @@ export function setupProjectManager() {
   setupHotspotHandlers()
   setupUtilityHandlers()
   setupBackupHandlers()
+  registerWebExportHandlers()
 }
 
 // Re-export types for use in other modules

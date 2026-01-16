@@ -12,6 +12,7 @@ import { EditorDialogs } from "@/components/EditorDialogs"
 import { PanoramaViewer } from "@/components/PanoramaViewer"
 import { ProjectPropertiesDialog } from "@/components/ProjectPropertiesDialog"
 import { BackupProgressDialog } from "@/components/BackupProgressDialog"
+import { WebExportProgressDialog } from "@/components/WebExportProgressDialog"
 import { useProject } from "@/hooks/useProject"
 import { useHotspots } from "@/hooks/useHotspots"
 import { useScenes } from "@/hooks/useScenes"
@@ -596,6 +597,7 @@ export function ProjectEditor() {
       )}
 
       <BackupProgressDialog open={menuActions.isExporting} onOpenChange={() => {}} />
+      <WebExportProgressDialog open={menuActions.isExportingWeb} onOpenChange={() => {}} />
     </div>
   )
 }

@@ -2,6 +2,9 @@
 
 A self-contained HTML/CSS/JavaScript panorama viewer that works in any modern web browser without requiring any server-side components or build tools.
 
+> [!IMPORTANT]
+> **This application MUST be run through a web server.** You cannot simply double-click `index.html` to open it due to browser security restrictions (CORS). See the Quick Start section below for easy setup instructions.
+
 ## Features
 
 - 🌐 **Standalone** - No dependencies on Electron or external servers
@@ -11,6 +14,46 @@ A self-contained HTML/CSS/JavaScript panorama viewer that works in any modern we
 - 📱 **Responsive** - Works on desktop, tablet, and mobile devices
 - ⌨️ **Keyboard Shortcuts** - Quick access to common functions
 - 🖼️ **Fullscreen Mode** - Immersive viewing experience
+
+## Quick Start
+
+### 1. Extract the ZIP file
+
+Extract all files to a folder on your computer.
+
+### 2. Run a local web server
+
+Choose one of these simple methods:
+
+**Option A: Python (Easiest - No Installation Needed)**
+
+Open a terminal/command prompt in the extracted folder and run:
+
+```bash
+python3 -m http.server 8000
+```
+
+Or on Windows:
+```bash
+python -m http.server 8000
+```
+
+**Option B: Node.js**
+
+```bash
+npx http-server -p 8000
+```
+
+**Option C: VS Code**
+
+1. Install the "Live Server" extension in VS Code
+2. Right-click on `index.html` → "Open with Live Server"
+
+### 3. Open in browser
+
+Navigate to: **http://localhost:8000**
+
+That's it! Your panorama tour is now running.
 
 ## File Structure
 

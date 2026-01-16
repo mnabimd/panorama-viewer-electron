@@ -52,9 +52,9 @@ export function createMenu(mainWindow: BrowserWindow): void {
         },
         {
           label: 'Export for Web',
-          enabled: false, // Placeholder for future implementation
+          accelerator: 'CmdOrCtrl+Shift+E',
           click: () => {
-            // To be implemented
+            mainWindow.webContents.send('menu:export-web')
           }
         },
         { type: 'separator' },

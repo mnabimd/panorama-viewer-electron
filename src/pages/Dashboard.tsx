@@ -363,9 +363,6 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
                 <ContextMenuContent>
                   <ContextMenuItem>Open</ContextMenuItem>
                   <ContextMenuItem>View Info</ContextMenuItem>
-                  <ContextMenuItem onClick={() => handleExportProject(project)}>
-                    Export
-                  </ContextMenuItem>
                   <ContextMenuItem 
                     className="text-red-600 focus:text-red-600 focus:bg-red-100"
                     onClick={() => setProjectToDelete(project)}

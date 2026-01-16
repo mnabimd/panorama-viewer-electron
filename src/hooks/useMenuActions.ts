@@ -142,6 +142,46 @@ if (!projectId) {
     }
   }, [projectId, toast])
 
+  const [isExportingWeb, setIsExportingWeb] = useState(false)
+
+  const handleExportWeb = useCallback(async () => {
+    if (!projectId) {
+      toast({
+        title: 'No Project Open',
+        description: 'Please open a project first to export',
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    setIsExportingWeb(true)
+    
+    try {
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('export:web', projectId)
+      
+      if (result.success) {
+        toast({
+          title: 'Export Successful!',
+          description: `Web app exported to ${result.filePath}`,
+          variant: 'success',
+          duration: 5000
+        })
+      } else if (result.error !== 'Export canceled') {
+        throw new Error(result.error || 'Export failed')
+      }
+    } catch (error: any) {
+      console.error('Failed to export web app:', error)
+      toast({
+        title: 'Export Failed',
+        description: error.message || 'Failed to export web app',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsExportingWeb(false)
+    }
+  }, [projectId, toast])
+
   // Project operations
   const handlePreviewMode = useCallback(() => {
     if (!projectId) {
@@ -179,6 +219,7 @@ if (!projectId) {
     ipcRenderer.on('menu:save-project', handleSaveProject)
     ipcRenderer.on('menu:import-scenes', handleImportScenes)
     ipcRenderer.on('menu:export-project', handleExportProject)
+    ipcRenderer.on('menu:export-web', handleExportWeb)
     
     // Project menu listeners
     ipcRenderer.on('menu:preview-mode', handlePreviewMode)
@@ -198,6 +239,7 @@ if (!projectId) {
       ipcRenderer.off('menu:save-project', handleSaveProject)
       ipcRenderer.off('menu:import-scenes', handleImportScenes)
       ipcRenderer.off('menu:export-project', handleExportProject)
+      ipcRenderer.off('menu:export-web', handleExportWeb)
       ipcRenderer.off('menu:preview-mode', handlePreviewMode)
       ipcRenderer.off('menu:project-properties', handleProjectProperties)
     }
@@ -208,6 +250,7 @@ if (!projectId) {
     handleImportScenes,
     handleImportProject,
     handleExportProject,
+    handleExportWeb,
     handlePreviewMode,
     handleProjectProperties,
     toast
@@ -221,8 +264,10 @@ if (!projectId) {
     handleImportScenes,
     handleImportProject,
     handleExportProject,
+    handleExportWeb,
     handlePreviewMode,
     handleProjectProperties,
-    isExporting
+    isExporting,
+    isExportingWeb
   }
 }

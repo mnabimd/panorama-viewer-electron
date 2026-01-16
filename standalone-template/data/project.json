@@ -1,0 +1,107 @@
+{
+  "id": "sample-project-001",
+  "name": "Sample Panorama Tour",
+  "description": "A beautiful virtual tour showcasing panoramic views",
+  "category": "Demo",
+  "version": "1.0.0",
+  "createdAt": "2026-01-16T10:00:00Z",
+  "updatedAt": "2026-01-16T10:00:00Z",
+  "settings": {
+    "autoRotate": false,
+    "initialFov": 50
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "Main View",
+      "imagePath": "./assets/scene-1.jpg",
+      "mediaType": "image",
+      "description": "The main panoramic view",
+      "isVisible": true,
+      "isFeatured": true,
+      "sphereCorrection": {
+        "pan": 0,
+        "tilt": 0,
+        "roll": 0
+      },
+      "hotspots": [
+        {
+          "id": "hotspot-1",
+          "type": "scene",
+          "position": {
+            "yaw": 0.5,
+            "pitch": 0.1
+          },
+          "tooltip": "Go to Second View",
+          "isVisible": true,
+          "targetSceneId": "scene-2",
+          "transition": "fade"
+        },
+        {
+          "id": "hotspot-2",
+          "type": "info",
+          "position": {
+            "yaw": -0.8,
+            "pitch": 0.2
+          },
+          "tooltip": "Learn more",
+          "isVisible": true,
+          "title": "Welcome!",
+          "content": "This is a sample panorama tour. Click on the circular markers to navigate between scenes, or click on info markers to learn more about specific points of interest."
+        },
+        {
+          "id": "hotspot-3",
+          "type": "url",
+          "position": {
+            "yaw": 1.2,
+            "pitch": -0.3
+          },
+          "tooltip": "Visit website",
+          "isVisible": true,
+          "url": "https://github.com/mistic100/Photo-Sphere-Viewer",
+          "openInNewTab": true
+        }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "name": "Second View",
+      "imagePath": "./assets/scene-2.jpg",
+      "mediaType": "image",
+      "description": "An alternative panoramic perspective",
+      "isVisible": true,
+      "isFeatured": false,
+      "sphereCorrection": {
+        "pan": 0,
+        "tilt": 0,
+        "roll": 0
+      },
+      "hotspots": [
+        {
+          "id": "hotspot-4",
+          "type": "scene",
+          "position": {
+            "yaw": -0.5,
+            "pitch": 0.0
+          },
+          "tooltip": "Return to Main View",
+          "isVisible": true,
+          "targetSceneId": "scene-1",
+          "transition": "fade"
+        },
+        {
+          "id": "hotspot-5",
+          "type": "info",
+          "position": {
+            "yaw": 0.8,
+            "pitch": 0.15
+          },
+          "tooltip": "Point of Interest",
+          "isVisible": true,
+          "title": "Scene Navigation",
+          "content": "You can navigate between scenes by clicking on the scene hotspots (circular markers with arrows). Try clicking the marker to go back to the main view!"
+        }
+      ]
+    }
+  ]
+}

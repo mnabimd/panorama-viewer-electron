@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panorama Viewer</title>
+    
+    <!-- Photo Sphere Viewer CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin/index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin/index.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Loading Panorama Tour...</p>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="app-container">
+        <!-- Left Sidebar -->
+        <aside id="left-sidebar" class="editor-sidebar-left">
+            <div class="sidebar-header-content">
+                <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Collapse sidebar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"/>
+                        <polyline points="12 19 5 12 12 5"/>
+                    </svg>
+                </button>
+                <h1 id="project-name" class="project-name">Panorama Tour</h1>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input 
+                        type="text" 
+                        id="search-input"
+                        placeholder="Search" 
+                        class="search-input"
+                    />
+                </div>
+
+                <!-- Scene Count -->
+                <div class="scene-count-row">
+                    <span id="scene-count" class="scene-count">0 scenes</span>
+                </div>
+
+                <!-- Scene List -->
+                <div class="scene-list" id="scene-list">
+                    <!-- Scenes will be dynamically added here -->
+                </div>
+
+                <!-- Gallery Button -->
+                <button id="gallery-btn" class="gallery-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    Show in Gallery
+                </button>
+            </div>
+        </aside>
+
+        <!-- Center Content -->
+        <main class="editor-main">
+            <!-- Floating Expand Button (visible when sidebar is collapsed) -->
+            <button id="expand-sidebar-btn" class="expand-sidebar-btn" title="Expand sidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                </svg>
+            </button>
+
+            <!-- Viewer Container -->
+            <div id="viewer"></div>
+        </main>
+
+        <!-- Info Hotspot Modal -->
+        <div id="info-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Information</h3>
+                    <button id="close-modal-btn" class="close-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-content"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gallery Modal -->
+        <div id="gallery-modal" class="modal gallery-modal">
+            <div class="gallery-content">
+                <div class="gallery-header">
+                    <h2 id="gallery-title">Scene Gallery</h2>
+                    <div class="gallery-search">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        <input 
+                            type="text" 
+                            id="gallery-search-input"
+                            placeholder="Search scenes..." 
+                            class="gallery-search-input"
+                        />
+                    </div>
+                    <button id="close-gallery-btn" class="close-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="gallery-body">
+                    <div id="gallery-grid" class="gallery-grid">
+                        <!-- Scene cards will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Sphere Viewer JS -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three/build/three.module.js",
+            "@photo-sphere-viewer/core": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core/index.module.js",
+            "@photo-sphere-viewer/markers-plugin": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin/index.module.js",
+            "@photo-sphere-viewer/compass-plugin": "https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/compass-plugin/index.module.js"
+        }
+    }
+    </script>
+    
+    <script type="module">
+        import { Viewer } from '@photo-sphere-viewer/core';
+        import { MarkersPlugin } from '@photo-sphere-viewer/markers-plugin';
+        import { CompassPlugin } from '@photo-sphere-viewer/compass-plugin';
+        
+        // Make available globally for app.js
+        window.PhotoSphereViewer = { Viewer, MarkersPlugin, CompassPlugin };
+        
+        // Load app.js after Photo Sphere Viewer is ready
+        const script = document.createElement('script');
+        script.src = 'js/app.js';
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>

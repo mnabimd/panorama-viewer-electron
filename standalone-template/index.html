@@ -85,6 +85,49 @@
 
             <!-- Viewer Container -->
             <div id="viewer"></div>
+
+            <!-- Right Sidebar Toggle Button (when collapsed) -->
+            <button id="right-sidebar-toggle" class="right-sidebar-toggle" title="Show Comments & Hotspots">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+            </button>
+
+            <!-- Right Sidebar -->
+            <aside id="right-sidebar" class="right-sidebar">
+                <div class="right-sidebar-header">
+                    <h3>Scene Details</h3>
+                    <button id="close-right-sidebar" class="close-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="right-sidebar-content">
+                    <!-- Hotspots Section -->
+                    <div class="sidebar-section">
+                        <div class="section-header">
+                            <h4>Hotspots</h4>
+                            <span id="hotspots-count" class="count-badge">0</span>
+                        </div>
+                        <div id="hotspots-list" class="hotspots-list">
+                            <!-- Hotspot items will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Comments Section -->
+                    <div class="sidebar-section">
+                        <div class="section-header">
+                            <h4>Comments</h4>
+                            <span id="comments-count" class="count-badge">0</span>
+                        </div>
+                        <div id="comments-list" class="comments-list">
+                            <!-- Comment items will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </main>
 
         <!-- Info Hotspot Modal -->

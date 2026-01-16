@@ -61,6 +61,20 @@
           "url": "https://github.com/mistic100/Photo-Sphere-Viewer",
           "openInNewTab": true
         }
+      ],
+      "comments": [
+        {
+          "id": "c1",
+          "author": "Sarah Johnson",
+          "text": "The natural lighting in this space is absolutely stunning! Perfect for photography.",
+          "timestamp": "2 days ago"
+        },
+        {
+          "id": "c2",
+          "author": "Mike Chen",
+          "text": "Love the minimalist design. Very clean and modern.",
+          "timestamp": "5 days ago"
+        }
       ]
     },
     {
@@ -100,6 +114,14 @@
           "isVisible": true,
           "title": "Scene Navigation",
           "content": "You can navigate between scenes by clicking on the scene hotspots (circular markers with arrows). Try clicking the marker to go back to the main view!"
+        }
+      ],
+      "comments": [
+        {
+          "id": "c3",
+          "author": "Emma Davis",
+          "text": "Cozy bedroom! The window placement is perfect.",
+          "timestamp": "1 week ago"
         }
       ]
     }

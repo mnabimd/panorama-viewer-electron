@@ -107,7 +107,7 @@ function initializeViewer() {
             }],
             [CompassPlugin, {
                 size: '120px',
-                position: 'top right',
+                position: 'top left',
                 backgroundSvg: compassBackgroundSvg,
                 coneColor: 'rgba(255, 255, 255, 0.5)',
                 navigation: true,
@@ -166,6 +166,10 @@ function loadScene(sceneId) {
             }));
             compassPlugin.setHotspots(compassHotspots);
         }
+        
+        // Update right sidebar
+        updateHotspots(scene);
+        updateComments(scene);
     });
 }
 
@@ -460,6 +464,134 @@ function filterGalleryScenes(query) {
 }
 
 /**
+ * Toggle right sidebar
+ */
+function toggleRightSidebar() {
+    const rightSidebar = document.getElementById('right-sidebar');
+    rightSidebar.classList.toggle('open');
+}
+
+/**
+ * Close right sidebar
+ */
+function closeRightSidebar() {
+    document.getElementById('right-sidebar').classList.remove('open');
+}
+
+/**
+ * Get hotspot icon SVG based on type
+ */
+function getHotspotIconSVG(type) {
+    if (type === 'scene') {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+        </svg>`;
+    } else if (type === 'info') {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>`;
+    } else if (type === 'url') {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>`;
+    }
+}
+
+/**
+ * Update hotspots list in right sidebar
+ */
+function updateHotspots(scene) {
+    const hotspotsList = document.getElementById('hotspots-list');
+    const hotspotsCount = document.getElementById('hotspots-count');
+    
+    hotspotsList.innerHTML = '';
+    
+    if (!scene.hotspots || scene.hotspots.length === 0) {
+        hotspotsList.innerHTML = '<div class="empty-state">No hotspots in this scene</div>';
+        hotspotsCount.textContent = '0';
+        return;
+    }
+    
+    hotspotsCount.textContent = scene.hotspots.length.toString();
+    
+    scene.hotspots.forEach(hotspot => {
+        const item = document.createElement('div');
+        item.className = 'hotspot-item';
+        
+        const label = hotspot.tooltip || hotspot.title || `${hotspot.type} hotspot`;
+        
+        item.innerHTML = `
+            <div class="hotspot-icon ${hotspot.type}">
+                ${getHotspotIconSVG(hotspot.type)}
+            </div>
+            <span class="hotspot-label">${label}</span>
+            <button class="hotspot-show-btn" title="Navigate to hotspot">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </button>
+        `;
+        
+        // Add click handler for show button
+        const showBtn = item.querySelector('.hotspot-show-btn');
+        showBtn.addEventListener('click', () => {
+            navigateToHotspot(hotspot);
+        });
+        
+        hotspotsList.appendChild(item);
+    });
+}
+
+/**
+ * Navigate camera to hotspot position
+ */
+function navigateToHotspot(hotspot) {
+    if (viewer && hotspot.position) {
+        viewer.animate({
+            yaw: hotspot.position.yaw || 0,
+            pitch: hotspot.position.pitch || 0,
+            zoom: 50,
+            speed: '2rpm'
+        });
+    }
+}
+
+/**
+ * Update comments list in right sidebar
+ */
+function updateComments(scene) {
+    const commentsList = document.getElementById('comments-list');
+    const commentsCount = document.getElementById('comments-count');
+    
+    commentsList.innerHTML = '';
+    
+    if (!scene.comments || scene.comments.length === 0) {
+        commentsList.innerHTML = '<div class="empty-state">No comments for this scene</div>';
+        commentsCount.textContent = '0';
+        return;
+    }
+    
+    commentsCount.textContent = scene.comments.length.toString();
+    
+    scene.comments.forEach(comment => {
+        const item = document.createElement('div');
+        item.className = 'comment-item';
+        
+        item.innerHTML = `
+            <div class="comment-author">${comment.author}</div>
+            <div class="comment-text">${comment.text}</div>
+            <div class="comment-timestamp">${comment.timestamp}</div>
+        `;
+        
+        commentsList.appendChild(item);
+    });
+}
+
+/**
  * Setup event listeners
  */
 function setupEventListeners() {
@@ -520,6 +652,12 @@ function setupEventListeners() {
     gallerySearchInput.addEventListener('input', (e) => {
         filterGalleryScenes(e.target.value);
     });
+    
+    // Right sidebar toggle
+    document.getElementById('right-sidebar-toggle').addEventListener('click', toggleRightSidebar);
+    
+    // Close right sidebar
+    document.getElementById('close-right-sidebar').addEventListener('click', closeRightSidebar);
     
     // Search input
     const searchInput = document.getElementById('search-input');

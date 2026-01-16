@@ -2,8 +2,23 @@
 
 A self-contained HTML/CSS/JavaScript panorama viewer that works in any modern web browser without requiring any server-side components or build tools.
 
+## 🚀 Quick Start (Easy Way)
+
+**For non-technical users - just double-click to run!**
+
+### Windows
+Double-click **`Start Project.bat`**
+
+### Linux
+Double-click **`linux_start.sh`** (or run `./linux_start.sh` in terminal)
+
+The panorama will automatically open in your default browser!  
+**To stop**: Close the terminal window that appears.
+
+---
+
 > [!IMPORTANT]
-> **This application MUST be run through a web server.** You cannot simply double-click `index.html` to open it due to browser security restrictions (CORS). See the Quick Start section below for easy setup instructions.
+> **Alternative Method**: If the launcher scripts don't work, you can manually run a web server. This application MUST be run through a web server - you cannot simply double-click `index.html` due to browser security restrictions (CORS). See the Manual Setup section below for instructions.
 
 ## Features
 
@@ -15,7 +30,9 @@ A self-contained HTML/CSS/JavaScript panorama viewer that works in any modern we
 - ⌨️ **Keyboard Shortcuts** - Quick access to common functions
 - 🖼️ **Fullscreen Mode** - Immersive viewing experience
 
-## Quick Start
+## Manual Setup (Advanced Users)
+
+If the launcher scripts don't work or you prefer manual control:
 
 ### 1. Extract the ZIP file
 
@@ -23,7 +40,7 @@ Extract all files to a folder on your computer.
 
 ### 2. Run a local web server
 
-Choose one of these simple methods:
+Choose one of these methods:
 
 **Option A: Python (Easiest - No Installation Needed)**
 

@@ -115,6 +115,25 @@ async function copyTemplateFiles(exportDir: string) {
     path.join(templateDir, 'README.md'),
     path.join(exportDir, 'README.md')
   );
+
+  // Copy launcher scripts
+  const launchersDir = path.join(templateDir, 'launchers');
+  
+  // Copy Windows launcher
+  await fs.copy(
+    path.join(launchersDir, 'Start Project.bat'),
+    path.join(exportDir, 'Start Project.bat')
+  );
+  
+  // Copy Linux launcher
+  const linuxLauncherDest = path.join(exportDir, 'linux_start.sh');
+  await fs.copy(
+    path.join(launchersDir, 'linux_start.sh'),
+    linuxLauncherDest
+  );
+  
+  // Make Linux launcher executable
+  await fs.chmod(linuxLauncherDest, 0o755);
 }
 
 /**

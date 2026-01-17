@@ -212,6 +212,32 @@ async function transformProjectData(
     })
   );
 
+  // Handle map export
+  let transformedMapConfig = undefined;
+  if (project.mapConfig?.imagePath) {
+    reportProgress(72, 'Copying map image...');
+    
+    const mapDir = path.join(assetsDir, 'map');
+    await fs.ensureDir(mapDir);
+    
+    const sourceMapPath = project.mapConfig.imagePath;
+    const mapFileName = `map${path.extname(sourceMapPath)}`;
+    const destMapPath = path.join(mapDir, mapFileName);
+    
+    try {
+      if (await fs.pathExists(sourceMapPath)) {
+        await fs.copy(sourceMapPath, destMapPath);
+        
+        transformedMapConfig = {
+          ...project.mapConfig,
+          imagePath: `./assets/map/${mapFileName}`
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to copy map image:', error);
+    }
+  }
+
   // Return transformed project data
   return {
     id: project.id,
@@ -223,6 +249,7 @@ async function transformProjectData(
     updatedAt: new Date().toISOString(),
     settings: project.settings,
     scenes: transformedScenes,
+    mapConfig: transformedMapConfig,
   };
 }
 

@@ -9,6 +9,7 @@ import { setupHotspotHandlers } from './hotspot-handlers'
 import { setupUtilityHandlers } from './utility-handlers'
 import { setupBackupHandlers } from './backup-handlers'
 import { registerWebExportHandlers } from './web-export-handlers'
+import { registerMapHandlers } from './map-handlers'
 
 /**
  * Setup all project manager handlers
@@ -21,7 +22,9 @@ export function setupProjectManager() {
   setupUtilityHandlers()
   setupBackupHandlers()
   registerWebExportHandlers()
+  registerMapHandlers()
 }
 
 // Re-export types for use in other modules
 export * from './types'
+

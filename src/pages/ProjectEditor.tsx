@@ -425,6 +425,10 @@ export function ProjectEditor() {
             onPanoramaClick={handlePanoramaClick}
             onSceneHotspotClick={handleSceneHotspotClick}
             onCancelPicking={() => setIsAddingHotspot(false)}
+            projectId={project?.id}
+            mapConfig={project?.mapConfig}
+            allScenes={scenes}
+            onRefreshProject={refreshProject}
             ref={panoramaViewerRef}
           />
         </div>

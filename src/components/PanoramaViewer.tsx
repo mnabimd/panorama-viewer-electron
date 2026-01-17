@@ -5,9 +5,10 @@ import { CompassPlugin } from '@photo-sphere-viewer/compass-plugin'
 import { PlanPlugin } from '@photo-sphere-viewer/plan-plugin'
 import { VideoPlugin } from '@photo-sphere-viewer/video-plugin'
 import { EquirectangularVideoAdapter } from '@photo-sphere-viewer/equirectangular-video-adapter'
-import { Scene, Hotspot } from '@/types/project.types'
+import { Scene, Hotspot, MapConfig } from '@/types/project.types'
 import { convertHotspotToMarker, degToRad } from '@/utils/panorama.utils'
 import { PanoramaPickingOverlay } from './PanoramaPickingOverlay'
+import { MiniMap } from './MiniMap'
 import '@photo-sphere-viewer/core/index.css'
 import '@photo-sphere-viewer/markers-plugin/index.css'
 import '@photo-sphere-viewer/compass-plugin/index.css'
@@ -24,6 +25,10 @@ interface PanoramaViewerProps {
   onPanoramaClick: (position: { yaw: number; pitch: number }) => void
   onSceneHotspotClick: (targetSceneId: string) => void
   onCancelPicking: () => void
+  projectId?: string
+  mapConfig?: MapConfig
+  allScenes?: Scene[]
+  onRefreshProject?: () => void
 }
 
 const logMessage = async (level: 'INFO' | 'ERROR' | 'WARN', message: string) => {
@@ -113,6 +118,10 @@ const PanoramaViewerComponent = forwardRef<any, PanoramaViewerProps>(function Pa
   onPanoramaClick,
   onSceneHotspotClick,
   onCancelPicking,
+  projectId,
+  mapConfig,
+  allScenes = [],
+  onRefreshProject,
 }, ref) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<Viewer | null>(null)
@@ -442,6 +451,18 @@ const PanoramaViewerComponent = forwardRef<any, PanoramaViewerProps>(function Pa
         isActive={isAddingHotspot}
         onCancel={onCancelPicking}
       />
+      
+      {/* Mini Map */}
+      {projectId && mapConfig && onRefreshProject && (
+        <MiniMap
+          projectId={projectId}
+          mapConfig={mapConfig}
+          currentSceneId={scene.id}
+          scenes={allScenes}
+          onNavigateToScene={onSceneHotspotClick}
+          onMapConfigUpdate={onRefreshProject}
+        />
+      )}
     </div>
   )
 })

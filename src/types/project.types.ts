@@ -74,4 +74,24 @@ export interface Project {
     initialFov: number
   }
   path?: string
+  mapConfig?: MapConfig  // Custom mini map configuration
 }
+
+// Map marker - connects a position on the map to a scene
+export interface MapMarker {
+  id: string
+  sceneId: string  // Which scene this marker represents
+  position: {
+    x: number  // Percentage from left (0-100)
+    y: number  // Percentage from top (0-100)
+  }
+  label?: string  // Optional label to display
+}
+
+// Map configuration for the project
+export interface MapConfig {
+  imagePath?: string  // Path to the map image file
+  markers: MapMarker[]
+  visible?: boolean  // Show/hide map (default: true)
+}
+

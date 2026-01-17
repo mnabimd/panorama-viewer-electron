@@ -42,6 +42,8 @@ export function ProjectPropertiesDialog({
   const [editedName, setEditedName] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [selectedMapFile, setSelectedMapFile] = useState<string | null>(null)
+  const [isUploadingMap, setIsUploadingMap] = useState(false)
   const { categories } = useCategories()
 
   useEffect(() => {
@@ -178,6 +180,146 @@ export function ProjectPropertiesDialog({
                 <Label className="text-muted-foreground">Last Modified</Label>
                 <div className="text-sm">{formatDate(projectData.updatedAt)}</div>
               </div>
+            </div>
+
+            {/* Map Section */}
+            <div className="space-y-2 pt-4 border-t">
+              <Label>Project Map</Label>
+              <p className="text-sm text-muted-foreground">
+                Upload a floor plan or site map to enable navigation
+              </p>
+              
+              {selectedMapFile && (
+                <div className="text-sm bg-muted p-2 rounded">
+                  <span className="text-muted-foreground">Selected: </span>
+                  <span className="font-mono">{selectedMapFile.split('/').pop()}</span>
+                </div>
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!projectData || isUploadingMap}
+                onClick={async () => {
+                  // @ts-ignore
+                  await window.ipcRenderer.invoke('log-message', {
+                    level: 'INFO',
+                    context: 'ProjectPropertiesDialog',
+                    file: 'src/components/ProjectPropertiesDialog.tsx',
+                    message: 'Upload button clicked'
+                  })
+                  
+                  if (!projectData) {
+                    // @ts-ignore
+                    await window.ipcRenderer.invoke('log-message', {
+                      level: 'WARN',
+                      context: 'ProjectPropertiesDialog',
+                      file: 'src/components/ProjectPropertiesDialog.tsx',
+                      message: 'No project data, returning'
+                    })
+                    return
+                  }
+                  
+                  try {
+                    // @ts-ignore
+                    await window.ipcRenderer.invoke('log-message', {
+                      level: 'INFO',
+                      context: 'ProjectPropertiesDialog',
+                      file: 'src/components/ProjectPropertiesDialog.tsx',
+                      message: 'Calling select-image-file'
+                    })
+                    
+                    // @ts-ignore
+                    const result = await window.ipcRenderer.invoke('select-image-file')
+                    
+                    // @ts-ignore
+                    await window.ipcRenderer.invoke('log-message', {
+                      level: 'INFO',
+                      context: 'ProjectPropertiesDialog',
+                      file: 'src/components/ProjectPropertiesDialog.tsx',
+                      message: `File selection result: ${JSON.stringify(result)}`
+                    })
+
+                    if (result && !result.canceled && result.filePaths && result.filePaths.length > 0) {
+                      // @ts-ignore
+                      await window.ipcRenderer.invoke('log-message', {
+                        level: 'INFO',
+                        context: 'ProjectPropertiesDialog',
+                        file: 'src/components/ProjectPropertiesDialog.tsx',
+                        message: `File selected: ${result.filePaths[0]}`
+                      })
+                      
+                      setSelectedMapFile(result.filePaths[0])
+                      setIsUploadingMap(true)
+                      
+                      // Upload immediately
+                      // @ts-ignore
+                      await window.ipcRenderer.invoke('log-message', {
+                        level: 'INFO',
+                        context: 'ProjectPropertiesDialog',
+                        file: 'src/components/ProjectPropertiesDialog.tsx',
+                        message: `Starting upload for project: ${projectData.id}`
+                      })
+                      
+                      // @ts-ignore
+                      const uploadResult = await window.ipcRenderer.invoke('upload-map-image', {
+                        projectId: projectData.id,
+                        imagePath: result.filePaths[0]
+                      })
+                      
+                      // @ts-ignore
+                      await window.ipcRenderer.invoke('log-message', {
+                        level: 'INFO',
+                        context: 'ProjectPropertiesDialog',
+                        file: 'src/components/ProjectPropertiesDialog.tsx',
+                        message: `Upload result: ${JSON.stringify(uploadResult)}`
+                      })
+
+                      setIsUploadingMap(false)
+
+                      if (uploadResult.success) {
+                        toast({
+                          title: 'Success',
+                          description: 'Map uploaded successfully. Reload the project to see it.'
+                        })
+                      } else {
+                        toast({
+                          title: 'Error',
+                          description: uploadResult.error || 'Failed to upload map',
+                          variant: 'destructive'
+                        })
+                        setSelectedMapFile(null)
+                      }
+                    } else {
+                      // @ts-ignore
+                      await window.ipcRenderer.invoke('log-message', {
+                        level: 'INFO',
+                        context: 'ProjectPropertiesDialog',
+                        file: 'src/components/ProjectPropertiesDialog.tsx',
+                        message: 'File selection canceled or no file'
+                      })
+                    }
+                  } catch (err) {
+                    // @ts-ignore
+                    await window.ipcRenderer.invoke('log-message', {
+                      level: 'ERROR',
+                      context: 'ProjectPropertiesDialog',
+                      file: 'src/components/ProjectPropertiesDialog.tsx',
+                      message: `Error during upload: ${err instanceof Error ? err.message : String(err)}`
+                    })
+                    
+                    setIsUploadingMap(false)
+                    setSelectedMapFile(null)
+                    toast({
+                      title: 'Error',
+                      description: err instanceof Error ? err.message : 'Failed to upload map',
+                      variant: 'destructive'
+                    })
+                  }
+                }}
+              >
+                {isUploadingMap ? 'Uploading...' : selectedMapFile ? 'Change Map Image' : 'Upload Map Image'}
+              </Button>
             </div>
 
             <div className="space-y-2">

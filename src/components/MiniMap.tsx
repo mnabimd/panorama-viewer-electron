@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { X, Plus, Upload, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MapConfig, MapMarker, Scene } from '@/types/project.types'
@@ -28,6 +28,7 @@ export function MiniMap({
   const [pendingMarkerPosition, setPendingMarkerPosition] = useState<{ x: number; y: number } | null>(null)
   const [isMarkerDialogOpen, setIsMarkerDialogOpen] = useState(false)
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
+  const [mapUpdateTimestamp, setMapUpdateTimestamp] = useState(Date.now())
   const mapImageRef = useRef<HTMLImageElement>(null)
 
   // Don't render if no map image
@@ -98,6 +99,7 @@ export function MiniMap({
 
   const handleUploadComplete = async () => {
     setIsUploadDialogOpen(false)
+    setMapUpdateTimestamp(Date.now()) // Force image reload by updating timestamp
     await onMapConfigUpdate()
   }
 
@@ -113,12 +115,19 @@ export function MiniMap({
     return scene?.name || 'Unknown Scene'
   }
 
-  // Convert file path to file:// URL if needed
-  const mapImageUrl = mapConfig.imagePath.startsWith('http') || mapConfig.imagePath.startsWith('data:')
-    ? mapConfig.imagePath
-    : mapConfig.imagePath.startsWith('file://')
-    ? mapConfig.imagePath
-    : `file://${mapConfig.imagePath}`
+  // Convert file path to file:// URL if needed and add cache-busting parameter
+  const mapImageUrl = useMemo(() => {
+    if (!mapConfig.imagePath) return ''
+    
+    const baseUrl = mapConfig.imagePath.startsWith('http') || mapConfig.imagePath.startsWith('data:')
+      ? mapConfig.imagePath
+      : mapConfig.imagePath.startsWith('file://')
+      ? mapConfig.imagePath
+      : `file://${mapConfig.imagePath}`
+    
+    // Add cache-busting parameter to force reload when map is updated
+    return `${baseUrl}?t=${mapUpdateTimestamp}`
+  }, [mapConfig.imagePath, mapUpdateTimestamp])
 
   // Find the active marker
   const activeMarker = mapConfig.markers.find(m => m.sceneId === currentSceneId)
@@ -177,7 +186,7 @@ export function MiniMap({
                   transform: 'translate(-50%, -50%)'
                 }}
                 onClick={(e) => handleMarkerClick(e, marker)}
-                title={marker.label || getSceneName(marker.sceneId)}
+                title={`${getSceneName(marker.sceneId)}${marker.label ? `: ${marker.label}` : ' - No description'}`}
               />
             ))}
           </div>
@@ -192,6 +201,7 @@ export function MiniMap({
           projectId={projectId}
           scenes={scenes}
           position={pendingMarkerPosition}
+          currentSceneId={currentSceneId}
           onSaved={handleMarkerSaved}
         />
 
@@ -212,43 +222,81 @@ export function MiniMap({
         className="mini-map-expanded px-5"
         onClick={handleBackdropClick}
       >
-        <div className="mini-map-content">
-          {/* Control Panel */}
-          <div className="mini-map-controls">
-            <Button
-              variant="default"
-              size="sm"
+        <div className="mini-map-content-sidebar">
+          {/* Marker List Sidebar - Vertical on the left */}
+          <div className="mini-map-marker-sidebar">
+            {/* Add Marker Button - Orange/Primary */}
+            <button
               onClick={handleAddMarker}
               disabled={isPlacingMarker}
+              className={`
+                mini-map-action-button-vertical mini-map-action-button-primary
+                ${isPlacingMarker ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              {isPlacingMarker ? 'Click on map...' : 'Add Marker'}
-            </Button>
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                {isPlacingMarker ? 'Click on map...' : 'Add Marker'}
+              </span>
+            </button>
 
-            <Button
-              variant="outline"
-              size="sm"
+            {/* Upload Map Button - Purple */}
+            <button
               onClick={() => setIsUploadDialogOpen(true)}
+              className="mini-map-action-button-vertical mini-map-action-button-purple"
             >
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Map
-            </Button>
+              <Upload className="w-4 h-4" />
+              <span className="text-sm font-medium">Upload Map</span>
+            </button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsExpanded(false)}
-              className="ml-auto"
-            >
-              <X className="w-5 h-5" />
-            </Button>
+            {/* Marker Items */}
+            <div className="mini-map-marker-list-vertical">
+              {mapConfig.markers.length === 0 ? (
+                <p className="text-sm text-gray-400 px-3 py-2">No markers yet</p>
+              ) : (
+                mapConfig.markers.map(marker => (
+                  <div
+                    key={marker.id}
+                    className={`mini-map-marker-item-vertical ${marker.sceneId === currentSceneId ? 'active' : ''}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">
+                        {getSceneName(marker.sceneId)}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {marker.label || 'No description'}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                      onClick={() => handleDeleteMarker(marker.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           {/* Map Container */}
           <div 
+            id="mini-map-image-container-main"
             className="mini-map-image-container"
             style={{ cursor: isPlacingMarker ? 'crosshair' : 'default' }}
           >
+            {/* Close Button - Absolutely positioned */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsExpanded(false)}
+              className="absolute top-4 right-4 z-10 bg-[#252525]/80 hover:bg-[#333] backdrop-blur-sm"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <img 
                 ref={mapImageRef}
@@ -271,43 +319,9 @@ export function MiniMap({
                     transform: 'translate(-50%, -50%)'
                   }}
                   onClick={(e) => handleMarkerClick(e, marker)}
-                  title={marker.label || getSceneName(marker.sceneId)}
+                  title={`${getSceneName(marker.sceneId)}${marker.label ? `: ${marker.label}` : ' - No description'}`}
                 />
               ))}
-            </div>
-          </div>
-
-          {/* Marker List */}
-          <div className="mini-map-marker-list">
-            <h3 className="text-sm font-semibold mb-3 text-white">Markers</h3>
-            <div className="space-y-2">
-              {mapConfig.markers.length === 0 ? (
-                <p className="text-sm text-gray-400">No markers yet</p>
-              ) : (
-                mapConfig.markers.map(marker => (
-                  <div
-                    key={marker.id}
-                    className={`mini-map-marker-item ${marker.sceneId === currentSceneId ? 'active' : ''}`}
-                  >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-white">
-                        {marker.label || getSceneName(marker.sceneId)}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {getSceneName(marker.sceneId)}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleDeleteMarker(marker.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))
-              )}
             </div>
           </div>
         </div>
@@ -322,6 +336,7 @@ export function MiniMap({
         projectId={projectId}
         scenes={scenes}
         position={pendingMarkerPosition}
+        currentSceneId={currentSceneId}
         onSaved={handleMarkerSaved}
       />
 

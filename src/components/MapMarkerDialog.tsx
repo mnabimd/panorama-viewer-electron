@@ -13,6 +13,7 @@ interface MapMarkerDialogProps {
   projectId: string
   scenes: Scene[]
   position: { x: number; y: number } | null
+  currentSceneId?: string
   onSaved: () => void
 }
 
@@ -22,19 +23,20 @@ export function MapMarkerDialog({
   projectId,
   scenes,
   position,
+  currentSceneId,
   onSaved
 }: MapMarkerDialogProps) {
   const [selectedSceneId, setSelectedSceneId] = useState('')
   const [label, setLabel] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
-  // Reset form when dialog opens
+  // Reset form when dialog opens and set default scene
   useEffect(() => {
     if (isOpen) {
-      setSelectedSceneId('')
+      setSelectedSceneId(currentSceneId || '')
       setLabel('')
     }
-  }, [isOpen])
+  }, [isOpen, currentSceneId])
 
   const handleSave = async () => {
     if (!selectedSceneId || !position) return
@@ -103,7 +105,7 @@ export function MapMarkerDialog({
               rows={3}
             />
             <p className="text-xs text-gray-400">
-              If empty, the scene name will be used
+              If empty, "No description" will be shown
             </p>
           </div>
         </div>

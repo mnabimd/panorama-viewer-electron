@@ -25,9 +25,9 @@ export function MapUploadDialog({
       // @ts-ignore
       const result = await window.ipcRenderer.invoke('select-image-file')
 
-      if (result && !result.canceled && result.filePath) {
-        setSelectedFile(result.filePath)
-        setPreviewUrl(`file://${result.filePath}`)
+      if (result && !result.canceled && result.filePaths && result.filePaths.length > 0) {
+        setSelectedFile(result.filePaths[0])
+        setPreviewUrl(`file://${result.filePaths[0]}`)
       }
     } catch (error) {
       console.error('Failed to select file:', error)

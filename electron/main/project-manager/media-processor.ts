@@ -106,3 +106,74 @@ export async function generateVideoThumbnail(
       })
   })
 }
+
+/**
+ * Compress an image while preserving its aspect ratio
+ * @param sourcePath - Path to the source image
+ * @param destPath - Path where compressed image should be saved
+ * @param options - Compression options
+ * @returns Path to the compressed image
+ */
+export async function compressImage(
+  sourcePath: string,
+  destPath: string,
+  options: {
+    quality?: number
+    maxWidth?: number
+    maxHeight?: number
+  } = {}
+): Promise<string> {
+  const {
+    quality = 60,
+    maxWidth = 8192,
+    maxHeight = 4096
+  } = options
+
+  try {
+    // Get original image metadata
+    const metadata = await sharp(sourcePath).metadata()
+    
+    if (!metadata.width || !metadata.height) {
+      throw new Error('Could not read image dimensions')
+    }
+
+    // Calculate new dimensions while preserving aspect ratio
+    let newWidth = metadata.width
+    let newHeight = metadata.height
+
+    // Only resize if image exceeds max dimensions
+    if (newWidth > maxWidth || newHeight > maxHeight) {
+      const aspectRatio = newWidth / newHeight
+      
+      if (newWidth > maxWidth) {
+        newWidth = maxWidth
+        newHeight = Math.round(newWidth / aspectRatio)
+      }
+      
+      if (newHeight > maxHeight) {
+        newHeight = maxHeight
+        newWidth = Math.round(newHeight * aspectRatio)
+      }
+    }
+
+    // Compress and save the image
+    await sharp(sourcePath)
+      .resize(newWidth, newHeight, {
+        fit: 'inside',           // Never crop or distort
+        withoutEnlargement: true // Don't upscale small images
+      })
+      .jpeg({ 
+        quality: quality,
+        mozjpeg: true // Better compression algorithm
+      })
+      .toFile(destPath)
+    
+    logger.info(`Compressed image: ${sourcePath} -> ${destPath} (${metadata.width}x${metadata.height} -> ${newWidth}x${newHeight}, quality: ${quality})`)
+    
+    return destPath
+  } catch (error) {
+    logger.error('Failed to compress image:', error)
+    throw error
+  }
+}
+

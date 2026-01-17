@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Slider } from "@/components/ui/slider"
+
 import {
   Dialog,
   DialogContent,
@@ -208,12 +210,42 @@ export function SettingsDialog({ open, onOpenChange, onWorkspaceChanged }: Setti
   }
 
   const handlePhotoCompressionToggle = async (enabled: boolean) => {
-    // This is disabled for now, but we'll keep the handler for future implementation
-    toast({
-      title: "Coming Soon",
-      description: "Photo compression feature will be available in a future update",
-    })
+    try {
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('update-photo-compression', enabled)
+      
+      if (result.success) {
+        setSettings(result.settings)
+        toast({
+          title: enabled ? "Compression Enabled" : "Compression Disabled",
+          description: enabled 
+            ? "New images will be compressed when uploaded" 
+            : "Images will be uploaded without compression",
+        })
+      }
+    } catch (error) {
+      console.error('Failed to update photo compression:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update compression setting",
+        variant: "destructive",
+      })
+    }
   }
+
+  const handleCompressionQualityChange = async (quality: number) => {
+    try {
+      // @ts-ignore
+      const result = await window.ipcRenderer.invoke('update-compression-settings', { quality })
+      
+      if (result.success) {
+        setSettings(result.settings)
+      }
+    } catch (error) {
+      console.error('Failed to update compression quality:', error)
+    }
+  }
+
 
   if (loading) {
     return (
@@ -381,30 +413,59 @@ export function SettingsDialog({ open, onOpenChange, onWorkspaceChanged }: Setti
           {/* Photo Compression Section */}
           <div className="settings-section">
             <h3 className="text-lg font-semibold mb-3">Photo Compression</h3>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="photo-compression">Enable Photo Compression</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically compress photos when adding to projects (Coming soon)
-                </p>
+            <div className="space-y-4">
+              {/* Enable/Disable Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="photo-compression">Enable Photo Compression</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically compress images when uploading to projects
+                  </p>
+                </div>
+                <Switch
+                  id="photo-compression"
+                  checked={settings?.photoCompressionEnabled || false}
+                  onCheckedChange={handlePhotoCompressionToggle}
+                />
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Switch
-                        id="photo-compression"
-                        checked={settings?.photoCompressionEnabled || false}
-                        onCheckedChange={handlePhotoCompressionToggle}
-                        disabled={true}
-                      />
+
+              {/* Compression Quality Slider */}
+              {settings?.photoCompressionEnabled && (
+                <div className="space-y-3 pt-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="compression-quality">Compression Quality</Label>
+                      <span className="text-sm text-muted-foreground font-medium">
+                        {settings?.compressionQuality || 60}%
+                      </span>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Coming soon</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                    <Slider
+                      id="compression-quality"
+                      min={1}
+                      max={100}
+                      step={1}
+                      value={[settings?.compressionQuality || 60]}
+                      onValueChange={(value) => handleCompressionQualityChange(value[0])}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Higher quality = larger file size. Recommended: 40-75
+                    </p>
+                  </div>
+
+                  {/* Max Dimensions Info */}
+                  <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium">Aspect Ratio Preservation</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Images are compressed while maintaining their original aspect ratio (2:1 for 360° panoramas).
+                      Max dimensions: {settings?.maxImageWidth || 8192}×{settings?.maxImageHeight || 4096}px
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

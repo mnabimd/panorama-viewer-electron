@@ -4,6 +4,9 @@ import * as path from 'path'
 import { randomUUID } from 'node:crypto'
 import { MapMarker, MapConfig } from './types'
 import { getProjectPath, readProjectMetadata, writeProjectMetadata } from './file-utils'
+import { compressImage } from './media-processor'
+import { getAppSettings } from '../settings-manager'
+
 
 /**
  * Register all map-related IPC handlers
@@ -28,10 +31,28 @@ export function registerMapHandlers() {
       const targetPath = path.join(mapDir, `map${ext}`)
       console.log('[MAP UPLOAD] Target path:', targetPath)
 
-      // Copy image to project map directory
-      console.log('[MAP UPLOAD] Copying image...')
-      await fs.copy(imagePath, targetPath, { overwrite: true })
+      // Check if compression is enabled
+      const settings = await getAppSettings()
+      
+      // Compress and copy image to project map directory
+      console.log('[MAP UPLOAD] Copying/compressing image...')
+      if (settings.photoCompressionEnabled) {
+        try {
+          await compressImage(imagePath, targetPath, {
+            quality: settings.compressionQuality,
+            maxWidth: settings.maxImageWidth,
+            maxHeight: settings.maxImageHeight
+          })
+          console.log('[MAP UPLOAD] Image compressed successfully')
+        } catch (compressionError) {
+          console.warn('[MAP UPLOAD] Compression failed, copying original:', compressionError)
+          await fs.copy(imagePath, targetPath, { overwrite: true })
+        }
+      } else {
+        await fs.copy(imagePath, targetPath, { overwrite: true })
+      }
       console.log('[MAP UPLOAD] Image copied successfully')
+
 
       // Update project metadata
       console.log('[MAP UPLOAD] Updating project metadata...')

@@ -36,10 +36,8 @@ export function MiniMap({
   const mapImageRef = useRef<HTMLImageElement>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
-  // Don't render if no map image
-  if (!mapConfig?.imagePath) {
-    return null
-  }
+  // Show placeholder if no map image
+  const hasMap = mapConfig?.imagePath
 
   const handleMapClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (!isExpanded) {
@@ -162,23 +160,58 @@ export function MiniMap({
 
   // Convert file path to file:// URL if needed and add cache-busting parameter
   const mapImageUrl = useMemo(() => {
-    if (!mapConfig.imagePath) return ''
+    const imagePath = mapConfig?.imagePath
+    if (!imagePath) return ''
     
-    const baseUrl = mapConfig.imagePath.startsWith('http') || mapConfig.imagePath.startsWith('data:')
-      ? mapConfig.imagePath
-      : mapConfig.imagePath.startsWith('file://')
-      ? mapConfig.imagePath
-      : `file://${mapConfig.imagePath}`
+    const baseUrl = imagePath.startsWith('http') || imagePath.startsWith('data:')
+      ? imagePath
+      : imagePath.startsWith('file://')
+      ? imagePath
+      : `file://${imagePath}`
     
     // Add cache-busting parameter to force reload when map is updated
     return `${baseUrl}?t=${mapUpdateTimestamp}`
-  }, [mapConfig.imagePath, mapUpdateTimestamp])
+  }, [mapConfig?.imagePath, mapUpdateTimestamp])
 
   // Find the active marker
-  const activeMarker = mapConfig.markers.find(m => m.sceneId === currentSceneId)
+  const activeMarker = mapConfig?.markers.find(m => m.sceneId === currentSceneId)
 
   if (!isExpanded) {
-    // Collapsed state - zoom to active marker if present
+    // Collapsed state - show placeholder if no map, otherwise show map
+    if (!hasMap) {
+      // Placeholder UI when no map exists
+      return (
+        <>
+          <div 
+            className="mini-map-collapsed"
+            onClick={() => setIsUploadDialogOpen(true)}
+            style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'transparent',
+              overflow: 'hidden',
+              cursor: 'pointer'
+            }}
+          >
+            <div className="text-center px-4">
+              <Upload className="w-10 h-10 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm font-medium text-white mb-1">Upload Floor Plan Here</p>
+              <p className="text-xs text-gray-400">Add a site map</p>
+            </div>
+          </div>
+
+          <MapUploadDialog
+            isOpen={isUploadDialogOpen}
+            onClose={() => setIsUploadDialogOpen(false)}
+            projectId={projectId}
+            onUploadComplete={handleUploadComplete}
+          />
+        </>
+      )
+    }
+
+    // Normal collapsed state with map - zoom to active marker if present
     const zoomLevel = activeMarker ? 1.7 : 1 // 70% zoom = 1.7x scale
     const translateX = activeMarker ? (50 - activeMarker.position.x) : 0
     const translateY = activeMarker ? (50 - activeMarker.position.y) : 0
@@ -296,10 +329,10 @@ export function MiniMap({
 
             {/* Marker Items */}
             <div className="mini-map-marker-list-vertical">
-              {mapConfig.markers.length === 0 ? (
+              {(mapConfig?.markers.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-400 px-3 py-2">No markers yet</p>
               ) : (
-                mapConfig.markers.map(marker => (
+                mapConfig?.markers.map(marker => (
                   <div
                     key={marker.id}
                     className={`mini-map-marker-item-vertical ${marker.sceneId === currentSceneId ? 'active' : ''}`}
@@ -392,7 +425,7 @@ export function MiniMap({
               />
               
               {/* Markers - positioned relative to the image */}
-              {mapConfig.markers.map(marker => (
+              {mapConfig?.markers.map(marker => (
                 <div
                   key={marker.id}
                   className={`map-marker map-marker-expanded ${marker.sceneId === currentSceneId ? 'map-marker-active' : 'map-marker-regular'}`}

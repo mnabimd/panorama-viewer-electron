@@ -3,8 +3,10 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { readProjectMetadata, writeProjectMetadata, getProjectPath, ensureDirectory } from './file-utils'
-import { getMediaType, generateThumbnail, generateVideoThumbnail } from './media-processor'
+import { getMediaType, generateThumbnail, generateVideoThumbnail, compressImage } from './media-processor'
+import { getAppSettings } from '../settings-manager'
 import type { Scene } from './types'
+
 
 /**
  * Setup IPC handlers for scene operations
@@ -28,17 +30,38 @@ export function setupSceneHandlers() {
         const scenesDir = path.join(projectPath, 'scenes')
         await ensureDirectory(scenesDir)
         
+        // Check if compression is enabled
+        const settings = await getAppSettings()
+        const mediaType = getMediaType(imagePath)
+        
         // Generate unique filename
         const ext = path.extname(imagePath)
         const newFileName = `scene_${randomUUID().slice(0, 8)}${ext}`
         const destPath = path.join(scenesDir, newFileName)
         
-        // Copy the file
-        await fs.copyFile(imagePath, destPath)
+        // Compress image if enabled and it's an image (not video)
+        if (settings.photoCompressionEnabled && mediaType === 'image') {
+          try {
+            await compressImage(imagePath, destPath, {
+              quality: settings.compressionQuality,
+              maxWidth: settings.maxImageWidth,
+              maxHeight: settings.maxImageHeight
+            })
+            console.log('Image compressed successfully')
+          } catch (compressionError) {
+            console.warn('Compression failed, copying original:', compressionError)
+            // If compression fails, fall back to copying original
+            await fs.copyFile(imagePath, destPath)
+          }
+        } else {
+          // Copy the file without compression
+          await fs.copyFile(imagePath, destPath)
+        }
         
         // Use relative path from project root
         finalImagePath = destPath
       }
+
       
       // Get file metadata
       let fileMetadata: { fileSize?: number; dateAdded?: string } = {}
@@ -263,17 +286,38 @@ export function setupSceneHandlers() {
         const scenesDir = path.join(projectPath, 'scenes')
         await ensureDirectory(scenesDir)
         
+        // Check if compression is enabled
+        const settings = await getAppSettings()
+        const mediaType = getMediaType(newImagePath)
+        
         // Generate unique filename
         const ext = path.extname(newImagePath)
         const newFileName = `scene_${randomUUID().slice(0, 8)}${ext}`
         const destPath = path.join(scenesDir, newFileName)
         
-        // Copy the file
-        await fs.copyFile(newImagePath, destPath)
+        // Compress image if enabled and it's an image (not video)
+        if (settings.photoCompressionEnabled && mediaType === 'image') {
+          try {
+            await compressImage(newImagePath, destPath, {
+              quality: settings.compressionQuality,
+              maxWidth: settings.maxImageWidth,
+              maxHeight: settings.maxImageHeight
+            })
+            console.log('Image compressed successfully')
+          } catch (compressionError) {
+            console.warn('Compression failed, copying original:', compressionError)
+            // If compression fails, fall back to copying original
+            await fs.copyFile(newImagePath, destPath)
+          }
+        } else {
+          // Copy the file without compression
+          await fs.copyFile(newImagePath, destPath)
+        }
         
         // Use the new path
         finalImagePath = destPath
       }
+
       
       // Regenerate thumbnail for the new image
       const oldThumbnailPath = metadata.scenes[sceneIndex].thumbnail

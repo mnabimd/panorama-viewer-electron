@@ -453,7 +453,7 @@ const PanoramaViewerComponent = forwardRef<any, PanoramaViewerProps>(function Pa
       />
       
       {/* Mini Map */}
-      {projectId && mapConfig && onRefreshProject && (
+      {projectId && onRefreshProject && (
         <MiniMap
           projectId={projectId}
           mapConfig={mapConfig}

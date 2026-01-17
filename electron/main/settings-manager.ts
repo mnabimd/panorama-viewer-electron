@@ -24,6 +24,9 @@ interface CustomCategory {
 interface AppSettings {
   workspacePath: string
   photoCompressionEnabled: boolean
+  compressionQuality: number  // JPEG quality 1-100 (default: 85)
+  maxImageWidth: number       // Max width in pixels (default: 8192)
+  maxImageHeight: number      // Max height in pixels (default: 4096)
   recentWorkspaces: string[]
   galleryViewMode?: 'grid' | 'list'  // Gallery view mode preference (default: grid)
   lastUpdatedAt: string
@@ -48,7 +51,10 @@ let currentSettings: AppSettings | null = null
 function getDefaultSettings(): AppSettings {
   return {
     workspacePath: DEFAULT_WORKSPACE,
-    photoCompressionEnabled: false,
+    photoCompressionEnabled: true,
+    compressionQuality: 60,
+    maxImageWidth: 8192,
+    maxImageHeight: 4096,
     recentWorkspaces: [],
     galleryViewMode: 'grid',
     lastUpdatedAt: new Date().toISOString(),
@@ -304,6 +310,33 @@ export function setupSettingsHandlers() {
       }
     }
   })
+
+  // Update compression quality settings
+  ipcMain.handle('update-compression-settings', async (_, settings: { 
+    quality?: number
+    maxWidth?: number
+    maxHeight?: number
+  }) => {
+    try {
+      const currentSettings = await getAppSettings()
+      const updatedSettings: AppSettings = {
+        ...currentSettings,
+        ...(settings.quality !== undefined && { compressionQuality: settings.quality }),
+        ...(settings.maxWidth !== undefined && { maxImageWidth: settings.maxWidth }),
+        ...(settings.maxHeight !== undefined && { maxImageHeight: settings.maxHeight })
+      }
+
+      await saveSettings(updatedSettings)
+      return { success: true, settings: updatedSettings }
+    } catch (error) {
+      console.error('Failed to update compression settings:', error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }
+    }
+  })
+
 
   // Get gallery view mode
   ipcMain.handle('get-gallery-view-mode', async () => {

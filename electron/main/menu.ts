@@ -6,6 +6,7 @@ import { Menu, MenuItem, BrowserWindow, MenuItemConstructorOptions, app } from '
  */
 export function createMenu(mainWindow: BrowserWindow): void {
   const isMac = process.platform === 'darwin'
+  const isDevelopment = !!process.env.VITE_DEV_SERVER_URL
 
   const template: MenuItemConstructorOptions[] = [
     // File Menu
@@ -148,10 +149,12 @@ export function createMenu(mainWindow: BrowserWindow): void {
           }
         }
       ]
-    },
-    
-    // Advanced Menu
-    {
+    }
+  ]
+
+  // Only add Advanced menu in development mode
+  if (isDevelopment) {
+    template.push({
       label: 'Advanced',
       submenu: [
         {
@@ -187,8 +190,8 @@ export function createMenu(mainWindow: BrowserWindow): void {
           }
         }
       ]
-    }
-  ]
+    })
+  }
 
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)

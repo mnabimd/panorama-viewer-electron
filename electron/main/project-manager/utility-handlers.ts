@@ -1,4 +1,4 @@
-import { ipcMain, dialog } from 'electron'
+import { ipcMain, dialog, shell } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -69,4 +69,52 @@ export function setupUtilityHandlers() {
       throw error
     }
   })
+
+  // Open folder in system file manager
+  ipcMain.handle('open-folder-in-explorer', async (_, folderPath: string) => {
+    try {
+      const result = await shell.openPath(folderPath)
+      if (result) {
+        // If result is not empty, it means there was an error
+        console.error('Failed to open folder:', result)
+        return { success: false, error: result }
+      }
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to open folder:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  // Calculate directory size recursively
+  ipcMain.handle('calculate-directory-size', async (_, dirPath: string) => {
+    try {
+      let totalSize = 0
+
+      async function calculateSize(currentPath: string): Promise<void> {
+        try {
+          const stats = await fs.stat(currentPath)
+          
+          if (stats.isFile()) {
+            totalSize += stats.size
+          } else if (stats.isDirectory()) {
+            const entries = await fs.readdir(currentPath)
+            await Promise.all(
+              entries.map(entry => calculateSize(path.join(currentPath, entry)))
+            )
+          }
+        } catch (error) {
+          // Skip files/folders that can't be accessed
+          console.warn(`Skipping inaccessible path: ${currentPath}`)
+        }
+      }
+
+      await calculateSize(dirPath)
+      return { success: true, size: totalSize }
+    } catch (error) {
+      console.error('Failed to calculate directory size:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
 }
+

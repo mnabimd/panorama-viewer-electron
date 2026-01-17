@@ -32,6 +32,7 @@ import { useMenuActions } from "@/hooks/useMenuActions"
 import { useCategories, Category } from "@/hooks/useCategories"
 import { SettingsDialog } from "@/components/SettingsDialog"
 import { BackupProgressDialog } from "@/components/BackupProgressDialog"
+import { ProjectPropertiesDialog } from "@/components/ProjectPropertiesDialog"
 import "./Dashboard.css"
 
 interface Project {
@@ -66,6 +67,8 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
   const [categoryUsageCount, setCategoryUsageCount] = useState(0)
   const [isDeleteCategoryDialogOpen, setIsDeleteCategoryDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [projectPropertiesOpen, setProjectPropertiesOpen] = useState(false)
+  const [selectedProjectForInfo, setSelectedProjectForInfo] = useState<Project | null>(null)
 
   // Initialize menu actions (without projectId since we're on Dashboard)
   const { handleImportProject } = useMenuActions()
@@ -223,6 +226,11 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
     }
   }
 
+  const handleViewInfo = (project: Project) => {
+    setSelectedProjectForInfo(project)
+    setProjectPropertiesOpen(true)
+  }
+
   return (
     <div className="dashboard">
       {/* Header */}
@@ -361,8 +369,8 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
                   </div>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                  <ContextMenuItem>Open</ContextMenuItem>
-                  <ContextMenuItem>View Info</ContextMenuItem>
+                  <ContextMenuItem onClick={() => navigate(`/project/${project.id}`)}>Open</ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleViewInfo(project)}>View Info</ContextMenuItem>
                   <ContextMenuItem 
                     className="text-red-600 focus:text-red-600 focus:bg-red-100"
                     onClick={() => setProjectToDelete(project)}
@@ -457,6 +465,17 @@ export function Dashboard({ projects, onNewProject, onRefresh }: DashboardProps)
       />
 
       <BackupProgressDialog open={isExporting} onOpenChange={() => {}} />
+
+      {selectedProjectForInfo && (
+        <ProjectPropertiesDialog
+          open={projectPropertiesOpen}
+          onClose={() => {
+            setProjectPropertiesOpen(false)
+            setSelectedProjectForInfo(null)
+          }}
+          projectId={selectedProjectForInfo.id}
+        />
+      )}
     </div>
   )
 }

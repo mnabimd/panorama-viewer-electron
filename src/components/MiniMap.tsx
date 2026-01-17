@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { X, Plus, Upload, Trash2 } from 'lucide-react'
+import { X, Plus, Upload, Trash2, ZoomIn, ZoomOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MapConfig, MapMarker, Scene } from '@/types/project.types'
 import { MapMarkerDialog } from './MapMarkerDialog'
@@ -29,7 +29,12 @@ export function MiniMap({
   const [isMarkerDialogOpen, setIsMarkerDialogOpen] = useState(false)
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   const [mapUpdateTimestamp, setMapUpdateTimestamp] = useState(Date.now())
+  const [zoomLevel, setZoomLevel] = useState(1)
+  const [isDragging, setIsDragging] = useState(false)
+  const [panPosition, setPanPosition] = useState({ x: 0, y: 0 })
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const mapImageRef = useRef<HTMLImageElement>(null)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
 
   // Don't render if no map image
   if (!mapConfig?.imagePath) {
@@ -101,6 +106,46 @@ export function MiniMap({
     setIsUploadDialogOpen(false)
     setMapUpdateTimestamp(Date.now()) // Force image reload by updating timestamp
     await onMapConfigUpdate()
+  }
+
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.25, 3)) // Max zoom 3x
+  }
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.25, 0.5)) // Min zoom 0.5x
+  }
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? -0.1 : 0.1
+    setZoomLevel(prev => Math.max(0.5, Math.min(3, prev + delta)))
+  }
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Don't start dragging if placing a marker or clicking on a marker
+    if (isPlacingMarker || (e.target as HTMLElement).classList.contains('map-marker')) {
+      return
+    }
+    setIsDragging(true)
+    setDragStart({ x: e.clientX - panPosition.x, y: e.clientY - panPosition.y })
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return
+    e.preventDefault()
+    setPanPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    })
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseLeave = () => {
+    setIsDragging(false)
   }
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -283,9 +328,10 @@ export function MiniMap({
 
           {/* Map Container */}
           <div 
+            ref={mapContainerRef}
             id="mini-map-image-container-main"
             className="mini-map-image-container"
-            style={{ cursor: isPlacingMarker ? 'crosshair' : 'default' }}
+            onWheel={handleWheel}
           >
             {/* Close Button - Absolutely positioned */}
             <Button
@@ -297,14 +343,52 @@ export function MiniMap({
               <X className="w-5 h-5" />
             </Button>
 
-            <div style={{ position: 'relative', display: 'inline-block' }}>
+            {/* Zoom Controls - Absolutely positioned */}
+            <div className="absolute top-4 left-4 z-10 flex flex-row gap-2 items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleZoomIn}
+                className="bg-[#252525]/80 hover:bg-[#333] backdrop-blur-sm"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleZoomOut}
+                className="bg-[#252525]/80 hover:bg-[#333] backdrop-blur-sm"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-5 h-5" />
+              </Button>
+              <div className="text-xs text-white bg-[#252525]/80 backdrop-blur-sm px-2 py-1 rounded text-center">
+                {Math.round(zoomLevel * 100)}%
+              </div>
+            </div>
+
+            <div 
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              style={{ 
+                position: 'relative', 
+                display: 'inline-block',
+                transform: `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)`,
+                transformOrigin: 'center center',
+                transition: isDragging ? 'none' : 'transform 0.2s ease',
+                cursor: isDragging ? 'grabbing' : (isPlacingMarker ? 'crosshair' : 'grab')
+              }}
+            >
               <img 
                 ref={mapImageRef}
                 src={mapImageUrl} 
                 alt="Project Map" 
                 className="mini-map-image-expanded"
                 onClick={handleMapClick}
-                style={{ display: 'block' }}
+                style={{ display: 'block', userSelect: 'none', pointerEvents: isDragging ? 'none' : 'auto' }}
               />
               
               {/* Markers - positioned relative to the image */}
